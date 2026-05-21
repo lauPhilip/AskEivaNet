@@ -1,0 +1,144 @@
+﻿@page "/Account/Login"
+@attribute [AllowAnonymous]
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using AskEiva.Domain.Entities
+@using AskEiva.WebUI.Components.Account
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>AskEIVA | Login</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard Elevation="0" Style="border: 1px solid #E2E8F0; border-radius: 4px;" Class="pa-8">
+        
+        <div class="text-center mb-6">
+            <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #0A2540;">AskEIVA</MudText>
+            <MudText Typo="Typo.subtitle1" Style="color: #5B7083;">Authenticator</MudText>
+        </div>
+
+        <StatusMessage Message="@errorMessage" />
+
+        <EditForm Model="Input!" OnValidSubmit="LoginUser" FormName="login" method="post">
+            <DataAnnotationsValidator />
+
+            <div class="d-flex flex-column gap-4">
+                <MudTextField @bind-Value="Input!.Email" 
+                            Label="Corporate Email" 
+                            Variant="Variant.Outlined" 
+                            Required="true" 
+                            InputType="InputType.Email"
+                            Immediate="true"
+                            UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Email" } })"
+                            Placeholder="name@eiva.com"
+                            For="@(() => Input!.Email)" />
+
+                <MudTextField @bind-Value="Input!.Password" 
+                            Label="Password" 
+                            Variant="Variant.Outlined" 
+                            Required="true" 
+                            InputType="InputType.Password"
+                            Immediate="true"
+                            UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Password" } })"
+                            Placeholder="Password"
+                            For="@(() => Input!.Password)" />
+
+                <div class="d-flex align-center justify-space-between my-2">
+                    <MudCheckBox @bind-Value="Input!.RememberMe" 
+                                Label="Remember this workstation" 
+                                Color="Color.Primary" 
+                                Class="ml-n2" />
+                    <MudLink Href="Account/ForgotPassword" Style="color: #0A2540; font-size: 0.875rem;">Forgot password?</MudLink>
+                </div>
+
+                <MudButton ButtonType="ButtonType.Submit" 
+                        Variant="Variant.Filled" 
+                        Color="Color.Primary" 
+                        FullWidth="true" 
+                        Class="py-3 mt-2" 
+                        Style="font-weight: bold; background-color: #0A2540;">
+                    LOG IN
+                </MudButton>
+            </div>
+        </EditForm>
+
+        <div class="mt-8 pt-4 text-center" style="border-top: 1px solid #F1F5F9;">
+            <MudText Typo="Typo.body2" Style="color: #5B7083;">
+                New Account? 
+                <MudLink Href="Account/Register" Class="ml-1 font-weight-bold" Style="color: #0A2540;">Register here</MudLink>
+            </MudText>
+        </div>
+
+    </MudCard>
+</MudContainer>
+
+@code {
+    private string? errorMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    // 💡 Declared as nullable to comply with [SupplyParameterFromForm] parameters
+    [SupplyParameterFromForm]
+    private InputModel? Input { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // 💡 Lifecycle Initialization: Immediately ensures an instance exists on load
+        Input ??= new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear the existing external cookie to ensure a clean local authentication log context
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+    }
+
+    public async Task LoginUser()
+    {
+        // 💡 Strict Runtime Defensive Check: Completely blocks execution if data binds as null
+        if (Input == null)
+        {
+            errorMessage = "Error: Internal form processing failure. Please refresh and try again.";
+            Logger.LogWarning("An unhandled null form state execution was caught and blocked.");
+            return;
+        }
+
+        // Safe execution context via our custom Weaviate storage layer
+        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User logged in successfully to EIVA Core.");
+            RedirectManager.RedirectTo(ReturnUrl);
+        }
+        else
+        {
+            errorMessage = "Error: Invalid operational security credentials provided.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Operational Email is required.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid corporate email address.")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Security Key/Password is required.")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        public bool RememberMe { get; set; }
+    }
+}

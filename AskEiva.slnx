@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AskEiva.Application/AskEiva.Application.csproj" />
+    <Project Path="src/AskEiva.Domain/AskEiva.Domain.csproj" />
+    <Project Path="src/AskEiva.Infrastructure/AskEiva.Infrastructure.csproj" />
+    <Project Path="src/AskEiva.WebUI/AskEiva.WebUI.csproj" />
+    <Project Path="src/AskEiva.Worker/AskEiva.Worker.csproj" />
+  </Folder>
+</Solution>

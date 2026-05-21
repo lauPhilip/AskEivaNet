@@ -1,0 +1,271 @@
+@page "/chat"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode InteractiveServer
+
+@using AskEiva.Domain.Repositories
+@using AskEiva.Domain.Services
+@using AskEiva.Domain.ValueObjects
+@using AskEiva.Domain.Entities
+
+@inject IKnowledgeRetrievalRepository RetrievalRepository
+@inject IMistralChatService ChatService
+@inject IJSRuntime JSRuntime
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-0" Style="height: calc(100vh - 130px); display: flex; flex-direction: column;">
+    
+    <MudPaper Elevation="0" Class="pa-4 mb-3 d-flex align-center justify-space-between" Style="border: 1px solid #E2E8F0; background: #FFFFFF; border-radius: 6px;">
+        <div class="d-flex align-center gap-4">
+            <MudText Typo="Typo.subtitle2" Class="font-weight-bold" Style="color: #0A2540;">Cluster Node:</MudText>
+            <MudChip T="string" Color="Color.Success" Variant="Variant.Text" Size="Size.Small" Icon="@Icons.Material.Filled.CloudDone">Weaviate Online</MudChip>
+            <MudChip T="string" Color="Color.Primary" Variant="Variant.Text" Size="Size.Small" Icon="@Icons.Material.Filled.Memory">Context Memory Active (@(_sessionHistory.Count) turns)</MudChip>
+        </div>
+        
+        <MudButton Variant="Variant.Outlined" 
+                   Color="Color.Error" 
+                   Size="Size.Small" 
+                   StartIcon="@Icons.Material.Filled.DeleteSweep" 
+                   OnClick="ClearConversationSession"
+                   Disabled="@(!_messageStream.Any(m => m.IsUser) || _isProcessing)">
+            Delete Conversation
+        </MudButton>
+    </MudPaper>
+
+    <MudPaper Elevation="0" Class="flex-grow-1 pa-4 overflow-y-auto mb-4 custom-chat-pane" Style="border: 1px solid #E2E8F0; background: #F8FAFC; min-height: 200px; border-radius: 8px;">
+        <div class="d-flex flex-column gap-4">
+            @foreach (var msg in _messageStream)
+            {
+                <div class="d-flex @(msg.IsUser ? "justify-end" : "justify-start")">
+                    <div class="pa-4 shadow-sm" style="max-width: 85%; width: auto; min-width: 250px; background-color: @(msg.IsUser ? "#0A2540" : "#FFFFFF"); color: @(msg.IsUser ? "#FFFFFF" : "#0A2540"); border-radius: 8px; border: @(msg.IsUser ? "none" : "1px solid #E2E8F0");">
+                        
+                        <div class="d-flex align-center gap-2 mb-2">
+                            <MudIcon Icon="@(msg.IsUser ? Icons.Material.Filled.Person : Icons.Material.Filled.SmartButton)" Size="Size.Small" Style="@($"color: {(msg.IsUser ? "#94A3B8" : "#0A2540")};")" />
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="@($"color: {(msg.IsUser ? "#94A3B8" : "#64748B")};")">
+                                @(msg.IsUser ? "User" : "AskEIVA Copilot Engine")
+                            </MudText>
+                        </div>
+
+                        <div class="custom-markdown-render">
+                            @((MarkupString)FormatMessageBody(msg.Text))
+                        </div>
+                        
+                        @if (msg.SemanticMatches.Any())
+                        {
+                            <div class="mt-4 pt-3" style="border-top: 1px solid #F1F5F9;">
+                                <MudText Typo="Typo.caption" Class="font-weight-bold d-block mb-2" Style="color: #64748B;">📌 Reference:</MudText>
+                                <div class="overflow-x-auto">
+                                    <table class="eiva-citation-table" style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
+                                        <thead>
+                                            <tr style="background: #F1F5F9; border-bottom: 2px solid #CBD5E1; color: #475569;">
+                                                <th style="padding: 6px; text-align: left;">Type</th>
+                                                <th style="padding: 6px; text-align: left;">Title</th>
+                                                <th style="padding: 6px; text-align: right;">Distance Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var match in msg.SemanticMatches)
+                                            {
+                                                <tr style="border-bottom: 1px solid #E2E8F0; color: #334155;">
+                                                    <td style="padding: 6px; font-weight: bold;"><span class="type-badge @match.SourceType.ToLower()">@match.SourceType</span></td>
+                                                    <td style="padding: 6px;"><a href="@match.SourceUrl" target="_blank" style="color: #0284C7; font-weight: 500; text-decoration: none;">@match.Title</a></td>
+                                                    <td style="padding: 6px; text-align: right; font-family: monospace;">@match.ConfidenceScore.ToString("F4")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            @if (_isProcessing && string.IsNullOrWhiteSpace(_streamingChunkBuffer))
+            {
+                <div class="d-flex justify-start">
+                    <div class="pa-4 rounded bg-white shadow-sm" style="border: 1px solid #E2E8F0;">
+                        <div class="d-flex align-center gap-3">
+                            <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+                            <MudText Typo="Typo.caption" Style="color: #64748B;">Retrieving a response...</MudText>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </MudPaper>
+
+    <MudPaper Elevation="0" Class="pa-3" Style="border: 1px solid #E2E8F0; background: #FFFFFF; border-radius: 8px;">
+        <div class="d-flex align-center gap-3">
+            <MudTextField @bind-Value="_currentPrompt" 
+                          Placeholder="Ask a follow up question (e.g., Can you show me an example command syntax?)..." 
+                          Variant="Variant.Text" 
+                          Underline="false"
+                          OnKeyDown="HandleKeyDown"
+                          Lines="1"
+                          MaxLines="4"
+                          Immediate="true"
+                          Class="flex-grow-1" />
+            <MudIconButton Icon="@Icons.Material.Filled.Send" 
+                           Color="Color.Primary" 
+                           OnClick="SubmitPrompt" 
+                           Disabled="@(string.IsNullOrWhiteSpace(_currentPrompt) || _isProcessing)" />
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _currentPrompt = string.Empty;
+    private bool _isProcessing = false;
+    private string _streamingChunkBuffer = string.Empty;
+    
+    //  Running runtime context lists tracking session-level memory state
+    private List<ChatTurn> _sessionHistory = new();
+    
+    private List<UIConversationMessage> _messageStream = new()
+    {
+        new UIConversationMessage 
+        { 
+            Text = "Ask a question about eiva", 
+            IsUser = false 
+        }
+    };
+
+    private async Task SubmitPrompt()
+    {
+        if (string.IsNullOrWhiteSpace(_currentPrompt) || _isProcessing) return;
+
+        var userText = _currentPrompt;
+        _currentPrompt = string.Empty;
+        _isProcessing = true;
+        _streamingChunkBuffer = string.Empty;
+
+        // Append to local display stream
+        _messageStream.Add(new UIConversationMessage { Text = userText, IsUser = true });
+        await ScrollToBottom();
+
+        // Initialize output token block bubble
+        var responseMessage = new UIConversationMessage { Text = "", IsUser = false };
+        _messageStream.Add(responseMessage);
+
+        try
+        {
+            // Sweep Weaviate vector collections
+            var semanticMatches = await RetrievalRepository.SearchSemanticChunksAsync(userText, limit: 3);
+            responseMessage.SemanticMatches = semanticMatches.ToList();
+
+            // Fire the rolling history stream block pass-through
+            await foreach (var chunk in ChatService.GenerateStreamingChatResponseAsync(userText, responseMessage.SemanticMatches, Enumerable.Empty<KnowledgeTriple>(), _sessionHistory))
+            {
+                _streamingChunkBuffer += chunk;
+                responseMessage.Text = _streamingChunkBuffer;
+                StateHasChanged();
+                await ScrollToBottom();
+            }
+
+            // Turn finalized successfully, commit both turns to history memory cache
+            _sessionHistory.Add(new ChatTurn(userText, IsUser: true));
+            _sessionHistory.Add(new ChatTurn(_streamingChunkBuffer, IsUser: false));
+
+            _ = Task.Run(async () => 
+            {
+                try
+                {
+                    // Mark as successful if we harvested text responses from Mistral securely
+                    bool isSuccess = !string.IsNullOrWhiteSpace(_streamingChunkBuffer) && !_streamingChunkBuffer.StartsWith("Stream Memory Allocation Error");
+                    await RetrievalRepository.LogInteractionAsync(userText, _streamingChunkBuffer, isSuccess);
+                }
+                catch (Exception telemetryEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Background telemetry commit drop: {telemetryEx.Message}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            responseMessage.Text = $"Stream Memory Allocation Error: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+            await ScrollToBottom();
+        }
+    }
+
+    // Completely flushes conversational structures back to initial boot vectors
+    private void ClearConversationSession()
+    {
+        _sessionHistory.Clear();
+        _messageStream.Clear();
+        _messageStream.Add(new UIConversationMessage 
+        { 
+            Text = "Conversation context deleted. Session restarted. Ready for fresh queries.", 
+            IsUser = false 
+        });
+        StateHasChanged();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SubmitPrompt();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await Task.Delay(10);
+        await JSRuntime.InvokeVoidAsync("eval", "document.querySelector('.custom-chat-pane')?.scrollTo(0, 100000)");
+    }
+
+    private string FormatMessageBody(string rawText)
+    {
+        if (string.IsNullOrWhiteSpace(rawText)) return "...";
+
+        var sb = new System.Text.StringBuilder(rawText);
+        sb.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+        var text = sb.ToString();
+
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\*\*(.*?)\*\*", "<strong>$1</strong>");
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"`(.*?)`", "<code style='background: #F1F5F9; padding: 2px 4px; border-radius: 4px; font-family: monospace; color: #DC2626;'>$1</code>");
+
+        var tableRegex = new System.Text.RegularExpressions.Regex(@"((?:\|[^|\r\n]*)+\|(?:\r?\n?)+)+");
+        text = tableRegex.Replace(text, match =>
+        {
+            var lines = match.Value.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            if (lines.Length < 2) return match.Value;
+
+            var htmlTable = new System.Text.StringBuilder("<div class='overflow-x-auto my-3'>");
+            htmlTable.Append("<table class='markdown-styled-table' style='width:100%; border:1px solid #CBD5E1; border-collapse:collapse; background:#FFFFFF; font-size:0.85rem;'>");
+            bool isHeader = true;
+
+            foreach (var line in lines)
+            {
+                if (line.Contains("---|") || line.Contains("---:|") || !line.Contains("|")) continue;
+                var columns = line.Split('|').Select(c => c.Trim()).Where((c, idx) => idx > 0 && idx < line.Split('|').Length - 1).ToList();
+
+                htmlTable.Append("<tr style='border-bottom:1px solid #E2E8F0;'>");
+                foreach (var col in columns)
+                {
+                    if (isHeader)
+                        htmlTable.Append($"<th style='padding:10px; background:#F8FAFC; text-align:left; font-weight:bold; color:#0A2540; border-bottom:2px solid #CBD5E1;'>{col}</th>");
+                    else
+                        htmlTable.Append($"<td style='padding:10px; text-align:left; color:#334155;'>{col}</td>");
+                }
+                htmlTable.Append("</tr>");
+                isHeader = false;
+            }
+            htmlTable.Append("</table></div>");
+            return htmlTable.ToString();
+        });
+
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s+(.*?)$", "<li>$1</li>", System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = text.Replace("\n", "<br />");
+        return text;
+    }
+
+    public class UIConversationMessage
+    {
+        public string Text { get; set; } = string.Empty;
+        public bool IsUser { get; set; }
+        public List<RetrievalMatch> SemanticMatches { get; set; } = new();
+    }
+}

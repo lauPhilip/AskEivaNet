@@ -1,0 +1,194 @@
+using System.Net.Http.Headers;
+using System.Text;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
+using AskEiva.WebUI.Components;
+using AskEiva.WebUI.Components.Account;
+using AskEiva.Domain.Entities; 
+using AskEiva.Domain.Repositories;
+using AskEiva.Domain.Services;
+using AskEiva.Infrastructure.Repositories; 
+using AskEiva.Infrastructure.Services;
+using MudBlazor.Services;
+
+// Change back to WebApplication to support Blazor Server UI pipelines
+var builder = WebApplication.CreateBuilder(args);
+
+// --- 1. CONFIGURATION RETRIEVAL ---
+string domain = builder.Configuration["FRESHDESK_DOMAIN"] ?? "eiva";
+string apiKey = builder.Configuration["FRESHDESK_API_KEY"] ?? "YOUR_KEY";
+string weaviateUrl = builder.Configuration["WEAVIATE_URL"] ?? "https://your-cluster.weaviate.network";
+string weaviateKey = builder.Configuration["WEAVIATE_API_KEY"] ?? "YOUR_KEY";
+string mistralKey = builder.Configuration["MISTRAL_API_KEY"] ?? "YOUR_KEY";
+
+if (!weaviateUrl.StartsWith("http://") && !weaviateUrl.StartsWith("https://"))
+{
+    weaviateUrl = $"https://{weaviateUrl.Trim('\"', ' ')}";
+}
+else
+{
+    weaviateUrl = weaviateUrl.Trim('\"', ' ');
+}
+
+string cleanApiKey = weaviateKey.Trim('\"', ' ');
+string cleanMistralKey = mistralKey.Trim('\"', ' ');
+var freshdeskAuthToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{apiKey}:X"));
+
+// --- 2. SYSTEM CORE SERVICES & BLAZOR ENGINE ---
+builder.Services.AddMudServices();
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+// MediatR scanning your Application layer query context assemblies
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AskEiva.Application.Knowledge.Queries.SearchKnowledgeQuery).Assembly));
+
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<IdentityRedirectManager>();
+builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = IdentityConstants.ApplicationScheme;
+        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+    })
+    .AddIdentityCookies();
+
+// --- 3. HTTP CLIENTS & INTEGRATIONS (HTTP BOUND REPOSITORIES) ---
+
+// Freshdesk Ticket Integration
+builder.Services.AddHttpClient<IFreshdeskService, FreshdeskService>(client =>
+{
+    client.BaseAddress = new Uri($"https://{domain}.freshdesk.com/api/v2/");
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", freshdeskAuthToken);
+});
+
+// Solutions Manual Crawler
+builder.Services.AddHttpClient<IDocumentationCrawler, DocumentationCrawler>(client =>
+{
+    client.BaseAddress = new Uri($"https://{domain}.freshdesk.com/api/v2/");
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", freshdeskAuthToken);
+});
+
+// Weaviate Identity User Management
+builder.Services.AddHttpClient<UserRepository>(client =>
+{
+    client.BaseAddress = new Uri(weaviateUrl);
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanApiKey}");
+    client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
+});
+
+// Automated Weaviate Schema Provisioner Worker Link
+builder.Services.AddHttpClient<WeaviateSchemaProvisioner>(client =>
+{
+    client.BaseAddress = new Uri(weaviateUrl);
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanApiKey}");
+    client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
+});
+
+// Ticket Repository Client 
+builder.Services.AddHttpClient<ITicketRepository, TicketRepository>(client =>
+{
+    client.BaseAddress = new Uri(weaviateUrl);
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanApiKey}");
+    client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
+});
+
+// GraphRAG Semantic Relations Repository Client
+builder.Services.AddHttpClient<IGraphRepository, GraphRepository>(client =>
+{
+    client.BaseAddress = new Uri(weaviateUrl);
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanApiKey}");
+    client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
+});
+
+// Documentation Manuals Repository Client
+builder.Services.AddHttpClient<IDocumentationRepository, DocumentationRepository>(client =>
+{
+    client.BaseAddress = new Uri(weaviateUrl);
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanApiKey}");
+    client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
+});
+
+// Multi-Source Hybrid Retrieval Repository (💡 DUAL AUTH FIXED)
+builder.Services.AddHttpClient<IKnowledgeRetrievalRepository, KnowledgeRetrievalRepository>(client =>
+{
+    client.BaseAddress = new Uri(weaviateUrl);
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanApiKey}");
+    client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
+    
+    // 💡 THE CRITICAL FIX: Forwards your Mistral token to Weaviate for on-the-fly embedding text vectorization!
+    client.DefaultRequestHeaders.Add("X-Mistral-Api-Key", cleanMistralKey);
+});
+
+// Mistral Conversational Inference Client
+builder.Services.AddHttpClient<IMistralChatService, MistralChatService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.mistral.ai/");
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanMistralKey}");
+});
+
+// Mistral Graph Extraction Engine Client
+builder.Services.AddHttpClient<IExtractionEngine, MistralExtractionEngine>(client =>
+{
+    client.BaseAddress = new Uri("https://api.mistral.ai/");
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanMistralKey}");
+});
+
+// --- 4. ASP.NET IDENTITY LIFECYCLE MANAGEMENT BINDINGS ---
+builder.Services.AddScoped<IUserStore<ApplicationUser>, WeaviateUserStore>();
+
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+    })
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, PasswordHasher<ApplicationUser>>();
+builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+var app = builder.Build();
+
+// --- 5. HTTP REQUEST PIPELINE (MIDDLEWARE) ---
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseHsts();
+}
+
+app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseHttpsRedirection();
+app.UseAntiforgery();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapStaticAssets();
+
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode()
+    .RequireAuthorization();
+
+app.MapAdditionalIdentityEndpoints();
+app.MapCustomLogoutEndpoint();
+
+// --- 6. ASYNCHRONOUS STARTUP PROVISIONING HOOK ---
+using (var scope = app.Services.CreateScope())
+{
+    var provisioner = scope.ServiceProvider.GetRequiredService<WeaviateSchemaProvisioner>();
+    await provisioner.EnsureSchemaAsync();
+}
+
+app.Run();

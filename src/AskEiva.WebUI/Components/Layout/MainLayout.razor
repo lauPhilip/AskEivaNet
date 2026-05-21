@@ -1,0 +1,66 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="_eivaTheme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Color="Color.Surface" ToolBarClass="pa-4" Fixed="true" Style="border-bottom: 1px solid #E2E8F0;">
+        <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #0A2540;">
+            <strong>AskEIVA</strong> <span style="font-weight: 300; font-size: 1.1rem; color: #5B7083; margin-left: 8px;">Customer Service Agent</span>
+        </MudText>
+        <MudSpacer />
+        
+        <AuthorizeView>
+            <Authorized>
+                <MudLink Href="Account/Manage" Color="Color.Primary" Class="mx-3">@context.User.Identity?.Name</MudLink>
+                <MudButton Href="Account/ForceLogout?returnUrl=%2F" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small" Class="mx-2">Logout</MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudLink Href="Account/Register" Color="Color.Primary" Class="mx-3 font-weight-bold" Style="align-self: center;">Register</MudLink>
+                <MudButton Href="Account/Login" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" Class="mx-2 px-4">Login</MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <AuthorizeView>
+        <Authorized>
+            <MudDrawer Open="true" ClipMode="DrawerClipMode.Always" Elevation="0" Variant="@DrawerVariant.Persistent" Style="border-right: 1px solid #E2E8F0;">
+                <MudNavMenu Bordered="false" Class="pa-2">
+                    <MudText Typo="Typo.subtitle2" Class="mud-text-secondary px-4 py-3 font-weight-bold" Style="letter-spacing: 1px; font-size: 0.75rem;">Navigation</MudText>
+                    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" Class="py-2">Home</MudNavLink>
+                    <MudNavLink Href="/chat" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Chat" Class="py-2">Chat</MudNavLink>
+                    <MudNavLink Href="/graphrag" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Hub" Class="py-2">GraphRAG</MudNavLink>
+                    <MudNavLink Href="/visualization" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.BarChart" Class="py-2">Data Visualization</MudNavLink>
+                </MudNavMenu>
+            </MudDrawer>
+        </Authorized>
+    </AuthorizeView>
+
+    <MudMainContent Class="mt-16 pt-4 pa-8" Style="background-color: #FAFAFA; min-height: 100vh;">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private readonly MudTheme _eivaTheme = new()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#0A2540",          // EIVA Corporate Deep Navy
+            Secondary = "#5B7083",        // Slate Grey-Blue Accent
+            Background = "#FAFAFA",       // Light layout canvas
+            Surface = "#FFFFFF",          // Pure White for Cards/Appbars
+            DrawerBackground = "#F8FAFC", // Distinct side pane
+            AppbarBackground = "#FFFFFF", // Matches corporate site header
+            TextPrimary = "#0A2540",      // Main text color
+            TextSecondary = "#5B7083",    // Secondary descriptions
+            ActionDefault = "#5B7083"     // Icon default color
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DefaultBorderRadius = "4px"   // Sharp engineering-style edges instead of overly round buttons
+        }
+    };
+}
