@@ -304,4 +304,49 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
             Console.WriteLine($"[Infrastructure Batch Error] Failed pushing release nodes to database: {ex.Message}");
         }
     }
+
+    // 💡 NEW: Queries Weaviate using filter arguments to verify if a document version is already complete
+    public async Task<bool> DoesProductVersionExistAsync(string product, string version)
+    {
+        var url = "v1/graphql";
+        
+        var query = new
+        {
+            query = $$"""
+            {
+              Get {
+                SoftwareReleaseNode(
+                  limit: 1
+                  where: {
+                    operator: And,
+                    concepts: [
+                      { path: ["product"], operator: Equal, valueText: "{{product}}" },
+                      { path: ["version"], operator: Equal, valueText: "{{version}}" }
+                    ]
+                  }
+                ) {
+                  version
+                }
+              }
+            }
+            """
+        };
+
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(url, query);
+            if (!response.IsSuccessStatusCode) return false;
+
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            if (doc.RootElement.TryGetProperty("data", out var data) &&
+                data.TryGetProperty("Get", out var get) &&
+                get.TryGetProperty("SoftwareReleaseNode", out var nodesArr) &&
+                nodesArr.ValueKind == JsonValueKind.Array)
+            {
+                return nodesArr.GetArrayLength() > 0;
+            }
+        }
+        catch { }
+        return false;
+    }
 }

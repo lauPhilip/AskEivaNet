@@ -26,4 +26,10 @@
     <ProjectReference Include="..\AskEiva.Infrastructure\AskEiva.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="release_notes_manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

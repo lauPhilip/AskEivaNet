@@ -8,10 +8,6 @@ using MediatR;
 
 namespace AskEiva.Application.ReleaseNotes.Commands;
 
-/// <summary>
-/// Domain-driven MediatR intent command to trigger the end-to-end automated scraping,
-/// parsing, chunking, and database ingestion pipeline for EIVA Product Release Notes.
-/// </summary>
 public record IngestReleaseNotesCommand : IRequest<IngestResultDto>;
 
 public record IngestResultDto(bool IsSuccess, int TotalChunksIngested, string StatusDetails);
@@ -31,27 +27,53 @@ public class IngestReleaseNotesCommandHandler : IRequestHandler<IngestReleaseNot
     {
         try
         {
-            // 1. Trigger the unmocked live infrastructure scraping loop
-            var liveExtractedNodes = await _scraper.ScrapeAndChunkAllReleaseNotesAsync();
-            var nodesList = liveExtractedNodes.ToList();
+            // 1. Trigger the fully dynamic web scraping matrix loop
+            var allDiscoveredNodes = await _scraper.ScrapeAndChunkAllReleaseNotesAsync();
+            var nodesList = allDiscoveredNodes.ToList();
 
             if (!nodesList.Any())
             {
-                return new IngestResultDto(false, 0, "Scraping cycle completed but no new release documents or updates were discovered.");
+                return new IngestResultDto(true, 0, "All available release note documents are up to date. No new records found.");
             }
 
-            // 2. Asynchronously stream the transaction batch directly up to Weaviate vector pools
-            await _retrievalRepository.BatchIngestReleaseNodesAsync(nodesList);
+            // 2. Filter nodes on-the-fly to enforce strict delta updates
+            var uniqueGroupedVersions = nodesList
+                .Select(n => new { n.Product, n.Version })
+                .Distinct()
+                .ToList();
+
+            var newNodesToIngest = new System.Collections.Generic.List<AskEiva.Domain.Entities.SoftwareReleaseNode>();
+
+            foreach (var versionGroup in uniqueGroupedVersions)
+            {
+                // Check Weaviate dynamically using our fast GraphQL lookups to block duplicates
+                bool alreadyIndexed = await _retrievalRepository.DoesProductVersionExistAsync(versionGroup.Product, versionGroup.Version);
+                
+                if (!alreadyIndexed)
+                {
+                    // Isolate and add only missing data nodes to the queue
+                    var targetChunks = nodesList.Where(n => n.Product == versionGroup.Product && n.Version == versionGroup.Version);
+                    newNodesToIngest.AddRange(targetChunks);
+                }
+            }
+
+            if (!newNodesToIngest.Any())
+            {
+                return new IngestResultDto(true, 0, "Delta Verification Passed: All crawled versions already exist inside the vector database storage.");
+            }
+
+            // 3. Batch commit only the new data nodes to Weaviate
+            await _retrievalRepository.BatchIngestReleaseNodesAsync(newNodesToIngest);
 
             return new IngestResultDto(
-                IsSuccess: true, 
-                TotalChunksIngested: nodesList.Count, 
-                StatusDetails: $"Successfully crawled, split, and committed {nodesList.Count} high-fidelity release note blocks to the SoftwareReleaseNode collection."
+                IsSuccess: true,
+                TotalChunksIngested: newNodesToIngest.Count,
+                StatusDetails: $"Dynamic Sync Completed: Ingested {newNodesToIngest.Count} fresh text nodes across discovered update tracks."
             );
         }
         catch (Exception ex)
         {
-            return new IngestResultDto(false, 0, $"Ingestion pipeline fault: {ex.Message}");
+            return new IngestResultDto(false, 0, $"Ingestion pipeline failure trace: {ex.Message}");
         }
     }
 }

@@ -1,0 +1,35 @@
+{
+  "Categories": [
+    {
+      "Name": "NaviSuite",
+      "Products": [
+        {
+          "Name": "NaviPac",
+            "Versions": [
+            { "Version": "4.13", "ReleaseDate": "2026-02-16", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac_4-13ReleaseNotes.pdf" },
+            { "Version": "4.11.1", "ReleaseDate": "2025-11-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11.1_Release%20notes.pdf" },
+            { "Version": "4.11", "ReleaseDate": "2025-10-23", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11_Release%20notes.pdf" },
+            { "Version": "4.6.7", "ReleaseDate": "2025-05-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.6.7_Release%20notes.pdf" }
+          ]
+        },
+        {
+          "Name": "NaviScan",
+          "Versions": [
+            { "Version": "NaviScan – 9.10.0", "ReleaseDate": "2026-01-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan%209.10.0_Release%20notes.pdf" }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "ROTV",
+      "Products": [
+        {
+          "Name": "ScanFish",
+          "Versions": [
+            { "Version": "ScanFish Flight – 1.6.4", "ReleaseDate": "2026-04-13", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20Flight%201.6.4_Release%20notes.pdf" }
+          ]
+        }
+      ]
+    }
+  ]
+}

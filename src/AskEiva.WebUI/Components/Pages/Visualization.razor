@@ -4,7 +4,11 @@
 
 @using MediatR
 @using AskEiva.Application.Telemetry.Queries
+@using AskEiva.Application.ReleaseNotes.Commands
 @inject IMediator Mediator
+@inject ISnackbar Snackbar
+
+<PageTitle>EIVA telemetry cockpit</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
     <MudGrid>
@@ -49,17 +53,29 @@
                         <MudIcon Icon="@Icons.Material.Filled.HistoryEdu" Color="Color.Primary" />
                         <MudText Typo="Typo.h6" Style="color: #0A2540; font-weight: 600;">Conversation Log</MudText>
                     </div>
-                    <MudButton Variant="Variant.Outlined" 
-                               Color="Color.Primary" 
-                               Size="Size.Small" 
-                               StartIcon="@Icons.Material.Filled.Refresh" 
-                               OnClick="FetchDashboardTelemetryAsync"
-                               Disabled="_isLoading">
-                        @(_isLoading ? "Querying..." : "Refresh Logs")
-                    </MudButton>
+                    
+                    <div class="d-flex gap-2">
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Primary" 
+                                   Size="Size.Small" 
+                                   StartIcon="@Icons.Material.Filled.CloudDownload" 
+                                   OnClick="TriggerReleaseNotesScrapeAsync"
+                                   Disabled="_isScraping">
+                            @(_isScraping ? "Processing PDF..." : "Sync Release Notes")
+                        </MudButton>
+
+                        <MudButton Variant="Variant.Outlined" 
+                                   Color="Color.Primary" 
+                                   Size="Size.Small" 
+                                   StartIcon="@Icons.Material.Filled.Refresh" 
+                                   OnClick="FetchDashboardTelemetryAsync"
+                                   Disabled="_isLoading">
+                            @(_isLoading ? "Querying..." : "Refresh Logs")
+                        </MudButton>
+                    </div>
                 </div>
 
-<MudDataGrid Items="@_interactionLogs" 
+                <MudDataGrid Items="@_interactionLogs" 
                              T="InteractionLogItemDto" 
                              Loading="_isLoading" 
                              Bordered="false" 
@@ -68,13 +84,12 @@
                              Filterable="true" 
                              FilterMode="DataGridFilterMode.ColumnFilterMenu">
                     <Columns>
-                        <HierarchyColumn T="InteractionLogItemDto"  />
+                        <HierarchyColumn T="InteractionLogItemDto" />
                         
                         <PropertyColumn Property="x => x.Timestamp" 
                                         Title="Timestamp" 
                                         Format="yyyy-MM-dd HH:mm:ss" 
                                         Sortable="true" 
-                                        InitialDirection="SortDirection.Descending"
                                         HeaderStyle="color: #0A2540; font-weight: bold; width: 180px;" />
                         
                         <PropertyColumn Property="x => x.UserPrompt" 
@@ -128,6 +143,7 @@
 
 @code {
     private bool _isLoading = false;
+    private bool _isScraping = false;
     private int _documentCount = 0;
     private int _ticketCount = 0;
     private List<InteractionLogItemDto> _interactionLogs = new();
@@ -144,7 +160,7 @@
 
         try
         {
-            // 💡 Connect directly to the application layer handler pipeline
+            // Connect directly to the application layer handler query pipeline
             var result = await Mediator.Send(new GetDashboardTelemetryQuery());
             
             _documentCount = result.TotalUniqueDocuments;
@@ -158,6 +174,56 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+private async Task TriggerReleaseNotesScrapeAsync()
+    {
+        _isScraping = true;
+        StateHasChanged();
+
+        try
+        {
+            // Dispatch the automated delta ingestion architecture pipeline via MediatR handlers
+            var result = await Mediator.Send(new IngestReleaseNotesCommand());
+            
+            // 💡 DEFENSIVE GUARD CHECK: Prevent NullReferenceException if the handler returns default/null
+            if (result is null)
+            {
+                System.Diagnostics.Debug.WriteLine("[Telemetry Cockpit Warning] IngestReleaseNotesCommand returned a null response payload.");
+                Snackbar?.Add("Ingestion sequence completed with an unreadable empty return payload.", Severity.Warning);
+                return;
+            }
+
+            // Guard the Snackbar popup call safely in case the MudBlazor provider service mapping isn't fully initialized
+            if (result.IsSuccess)
+            {
+                if (result.TotalChunksIngested > 0)
+                {
+                    Snackbar?.Add(result.StatusDetails ?? "Ingestion completed successfully.", Severity.Success);
+                }
+                else
+                {
+                    Snackbar?.Add(result.StatusDetails ?? "Delta Check: Version already processed. Skipped.", Severity.Warning);
+                }
+            }
+            else
+            {
+                Snackbar?.Add(result.StatusDetails ?? "Ingestion processing encountered an anomaly.", Severity.Error);
+            }
+
+            // Instantly refresh the visual tracking metrics arrays inside your dashboard view card
+            await FetchDashboardTelemetryAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Scraping Pipeline Fault] Exception intercepted: {ex.Message}");
+            Snackbar?.Add($"Scraping pipeline faulted: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isScraping = false;
             StateHasChanged();
         }
     }

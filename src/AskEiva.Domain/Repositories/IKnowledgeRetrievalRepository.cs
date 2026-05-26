@@ -14,4 +14,5 @@ public interface IKnowledgeRetrievalRepository
     Task<System.Text.Json.JsonElement> GetRawInteractionLogsAsync(int limit);
     Task LogInteractionAsync(string query, string answer, bool wasSuccessful);
     Task BatchIngestReleaseNodesAsync(IEnumerable<SoftwareReleaseNode> nodes);
+    Task<bool> DoesProductVersionExistAsync(string product, string version);
 }

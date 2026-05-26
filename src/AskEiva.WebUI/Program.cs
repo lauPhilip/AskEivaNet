@@ -100,6 +100,23 @@ builder.Services.AddHttpClient<ITicketRepository, TicketRepository>(client =>
     client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
 });
 
+// The Software Release Ingestion Scraper Architecture Pipeline
+builder.Services.AddHttpClient<AskEiva.Domain.Services.IReleaseNotesScraper, AskEiva.Infrastructure.Services.ReleaseNotesScraper>(client =>
+{
+    // Point to the explicit domain root
+    client.BaseAddress = new Uri("https://download.eiva.com/#");
+    
+    // Clear out any old defaults to prevent header collisions
+    client.DefaultRequestHeaders.Clear();
+    
+    // 🌐 Emulate a mainstream browser footprint
+    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
+    client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+    client.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
+    client.DefaultRequestHeaders.Add("Connection", "keep-alive");
+});
+
 // GraphRAG Semantic Relations Repository Client
 builder.Services.AddHttpClient<IGraphRepository, GraphRepository>(client =>
 {
