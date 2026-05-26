@@ -51,51 +51,23 @@ public class ReleaseNotesScraper : IReleaseNotesScraper
 
                 foreach (var product in category.Products)
                 {
-                    if (product.Versions == null) continue;
-
-                    foreach (var target in product.Versions)
+                    // 1. Process the "Latest" release list track
+                    if (product.Latest != null)
                     {
-                        try
+                        foreach (var target in product.Latest)
                         {
-                            // 🚀 THE DELTA ENFORCEMENT PASSTHROUGH:
-                            // The outer MediatR Command checks Weaviate BEFORE committing chunks.
-                            // To build a truly performant architecture, we can move that query here in a future step 
-                            // to prevent even downloading the PDF bytes if the version is already indexed.
-
-                            string clearUrl = Uri.UnescapeDataString(target.RelativeUrl);
-                            Console.WriteLine($"[Scraper Network Stream] Accessing binary endpoint path: {clearUrl}");
-
-                            // Fetch the live binary file stream layout natively into transient memory buffers
-                            string safeRelativePath = target.RelativeUrl;
-
-                            // If the manifest string contains raw spaces, convert them cleanly to web-safe escape characters
-                            if (safeRelativePath.Contains(" "))
-                            {
-                                // Breaks the path by slash segments to escape individual words safely without corrupting the directory slashes
-                                var segments = safeRelativePath.Split('/');
-                                for (int i = 0; i < segments.Length; i++)
-                                {
-                                    // Encodes items like "NaviPac 4.11.1_Release notes.pdf" -> "NaviPac%204.11.1_Release%20notes.pdf"
-                                    segments[i] = Uri.EscapeDataString(Uri.UnescapeDataString(segments[i]));
-                                }
-                                safeRelativePath = string.Join("/", segments);
-                            }
-
-                            Console.WriteLine($"[Scraper Network Stream] Requesting resilient URI path: {safeRelativePath}");
-                            byte[] downloadedPdfBytes = await _httpClient.GetByteArrayAsync(safeRelativePath);
-                            
-                            // Extract raw text characters natively from the byte array using PdfPig
-                            string rawDocumentText = ExtractTextFromPdfBytes(downloadedPdfBytes);
-                            
-                            // Segment the raw text layout string into high-fidelity context chunks
-                            var fileSegmentedChunks = ChunkReleaseNotesContent(rawDocumentText, product.Name, target.Version, target.ReleaseDate);
-                            globalDiscoveredNodes.AddRange(fileSegmentedChunks);
-                            
-                            Console.WriteLine($"[Scraper Index Task] Successfully structured target record: {product.Name} v{target.Version} ({fileSegmentedChunks.Count} semantic chunks generated).");
+                            var nodes = await ProcessSinglePdfUrlTrackAsync(target, category.Name, product.Name, "Latest");
+                            globalDiscoveredNodes.AddRange(nodes);
                         }
-                        catch (Exception assetEx)
+                    }
+
+                    // 2. Process the "Archive" legacy list track
+                    if (product.Archive != null)
+                    {
+                        foreach (var target in product.Archive)
                         {
-                            Console.WriteLine($"[Scraper Connectivity Exception] Skipped unresolvable resource element track [{target.RelativeUrl}]: {assetEx.Message}");
+                            var nodes = await ProcessSinglePdfUrlTrackAsync(target, category.Name, product.Name, "Archive");
+                            globalDiscoveredNodes.AddRange(nodes);
                         }
                     }
                 }
@@ -103,10 +75,88 @@ public class ReleaseNotesScraper : IReleaseNotesScraper
         }
         catch (Exception globalEx)
         {
-            Console.WriteLine($"[Scraper Runtime Crash] Manifest execution loop collapsed: {globalEx.Message}");
+            Console.WriteLine($"[Scraper Runtime Crash] Nested manifest execution loop collapsed: {globalEx.Message}");
         }
 
         return globalDiscoveredNodes;
+    }
+
+    private async Task<List<SoftwareReleaseNode>> ProcessSinglePdfUrlTrackAsync(VersionEntryDto target, string categoryName, string productName, string releaseType)
+    {
+        var fileChunks = new List<SoftwareReleaseNode>();
+
+        // Clean up titles and decouple version keys cleanly
+        string explicitVersion = target.Version;
+        if (explicitVersion.Contains("-")) explicitVersion = explicitVersion.Split('-')[1].Trim();
+        if (explicitVersion.Contains("–")) explicitVersion = explicitVersion.Split('–')[1].Trim();
+        string fullTitle = $"{productName} – {explicitVersion}";
+
+        // 💡 SCENARIO A: Standalone Ingestion Case (No PDF provided, parse metadata note text directly)
+        if (string.IsNullOrWhiteSpace(target.RelativeUrl))
+        {
+            if (!string.IsNullOrWhiteSpace(target.Note))
+            {
+                fileChunks.Add(new SoftwareReleaseNode
+                {
+                    GroupCategory = categoryName,
+                    Product = productName,
+                    ReleaseType = releaseType,
+                    Version = explicitVersion,
+                    FullVersionTitle = fullTitle,
+                    MetadataNote = target.Note,
+                    ReleaseDate = target.ReleaseDate,
+                    SectionHeader = "Deployment Dependency & Compatibility Notice",
+                    ContentChunk = target.Note,
+                    RefTickets = string.Empty
+                });
+                Console.WriteLine($"[Scraper Note Sync] Processed standalone manifest footnote metadata for: {fullTitle}");
+            }
+            return fileChunks;
+        }
+
+        // 💡 SCENARIO B: Full Document Download Sequence
+        try
+        {
+            string safeRelativePath = target.RelativeUrl;
+            if (safeRelativePath.StartsWith("https://download.eiva.com/", StringComparison.OrdinalIgnoreCase))
+            {
+                safeRelativePath = safeRelativePath.Replace("https://download.eiva.com/", "", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (safeRelativePath.Contains(" "))
+            {
+                var segments = safeRelativePath.Split('/');
+                for (int i = 0; i < segments.Length; i++)
+                {
+                    segments[i] = Uri.EscapeDataString(Uri.UnescapeDataString(segments[i]));
+                }
+                safeRelativePath = string.Join("/", segments);
+            }
+
+            Console.WriteLine($"[Scraper Network Stream] Requesting [{releaseType}] URI path: {safeRelativePath}");
+            byte[] downloadedPdfBytes = await _httpClient.GetByteArrayAsync(safeRelativePath);
+            
+            string rawDocumentText = ExtractTextFromPdfBytes(downloadedPdfBytes);
+
+            fileChunks = ChunkReleaseNotesContent(
+                rawDocumentText, 
+                categoryName, 
+                productName, 
+                releaseType, 
+                explicitVersion, 
+                fullTitle, 
+                target.Note, // Forwarded note to child chunks
+                target.ReleaseDate
+            );
+
+            Console.WriteLine($"[Scraper Index Task] Successfully structured target record: {fullTitle} ({fileChunks.Count} chunks).");
+        }
+        catch (Exception assetEx)
+        {
+            Console.WriteLine($"[Scraper Exception] Skipped problematic asset file channel [{target.RelativeUrl}]: {assetEx.Message}");
+        }
+
+        return fileChunks;
     }
 
     private string ExtractTextFromPdfBytes(byte[] pdfBytes)
@@ -125,78 +175,81 @@ public class ReleaseNotesScraper : IReleaseNotesScraper
         return sb.ToString();
     }
 
-private List<SoftwareReleaseNode> ChunkReleaseNotesContent(string text, string product, string version, DateTime date)
-{
-    var chunks = new List<SoftwareReleaseNode>();
-    
-    // 💡 SYSTEM OPTIMIZATION: Removed strict line-start anchors so it matches headings embedded near line breaks.
-    // This captures headers like "2.1.1 Kernel" or "4.2.8.3 Minor fixes" even with leading noise.
-    var sectionRegex = new Regex(@"(?<header>\d+\.\d+\.\d+\s+[A-Za-z0-9\s\(\)\.\-\/]+)\r?\n(?<content>.*?)(?=\d+\.\d+\.\d+\s+[A-Za-z0-9\s\(\)\.\-\/]+|\z)", RegexOptions.Singleline);
-    var ticketRegex = new Regex(@"\[(?:FD|J|DO)?-?(\d+)\]", RegexOptions.IgnoreCase);
-
-    var matches = sectionRegex.Matches(text);
-    foreach (Match match in matches)
+    private List<SoftwareReleaseNode> ChunkReleaseNotesContent(
+        string text, 
+        string groupCategory, 
+        string product, 
+        string releaseType,
+        string version, 
+        string fullVersionTitle, 
+        string metadataNote,
+        DateTime date)
     {
-        string header = match.Groups["header"].Value.Trim();
-        string content = match.Groups["content"].Value.Trim();
+        var chunks = new List<SoftwareReleaseNode>();
+        var sectionRegex = new Regex(@"(?<header>\d+\.\d+\.\d+\s+[A-Za-z0-9\s\(\)\.\-\/]+)\r?\n(?<content>.*?)(?=\d+\.\d+\.\d+\s+[A-Za-z0-9\s\(\)\.\-\/]+|\z)", RegexOptions.Singleline);
+        var ticketRegex = new Regex(@"\[(?:FD|J|DO)?-?(\d+)\]", RegexOptions.IgnoreCase);
 
-        // Skip table of contents references or tiny layout fragments
-        if (string.IsNullOrWhiteSpace(content) || content.Length < 30 || header.Contains("Contents")) continue;
-
-        // Automatically extract any internal Jira or Freshdesk ticket references inside this specific section chunk
-        var ticketMatches = ticketRegex.Matches(content);
-        var ticketsList = ticketMatches.Cast<Match>()
-            .Select(m => m.Groups[1].Value.Trim())
-            .Where(t => !string.IsNullOrWhiteSpace(t))
-            .Distinct();
-            
-        string joinedTickets = string.Join(" ", ticketsList);
-
-        chunks.Add(new SoftwareReleaseNode
+        var matches = sectionRegex.Matches(text);
+        foreach (Match match in matches)
         {
-            Product = product,
-            Version = version,
-            ReleaseDate = date,
-            SectionHeader = header,
-            ContentChunk = content,
-            RefTickets = joinedTickets
-        });
-    }
+            string header = match.Groups["header"].Value.Trim();
+            string content = match.Groups["content"].Value.Trim();
 
-    // Comprehensive fallback pass: If custom heading markers differ across legacy formats, chunk by page boundaries
-    if (!chunks.Any())
-    {
-        // Splits along page layout boundaries safely
-        var pages = text.Split(new[] { "--- PAGE" }, StringSplitOptions.RemoveEmptyEntries);
-        int pageCounter = 1;
-        foreach (var pageText in pages)
-        {
-            if (pageText.Length < 100) continue;
-            
-            // Extract ticket keys out of the raw page text block
-            var ticketMatches = ticketRegex.Matches(pageText);
-            var ticketsList = ticketMatches.Cast<Match>().Select(m => m.Groups[1].Value).Distinct();
+            if (string.IsNullOrWhiteSpace(content) || content.Length < 30 || header.Contains("Contents")) continue;
+
+            var ticketMatches = ticketRegex.Matches(content);
+            var ticketsList = ticketMatches.Cast<Match>().Select(m => m.Groups[1].Value.Trim()).Distinct();
             string joinedTickets = string.Join(" ", ticketsList);
 
             chunks.Add(new SoftwareReleaseNode
             {
+                GroupCategory = groupCategory,
                 Product = product,
+                ReleaseType = releaseType,
                 Version = version,
+                FullVersionTitle = fullVersionTitle,
+                MetadataNote = metadataNote,
                 ReleaseDate = date,
-                SectionHeader = $"General Specifications - Page {pageCounter}",
-                ContentChunk = pageText.Trim(),
+                SectionHeader = header,
+                ContentChunk = content,
                 RefTickets = joinedTickets
             });
-            pageCounter++;
         }
-    }
 
-    return chunks;
-}
+        if (!chunks.Any())
+        {
+            chunks.Add(new SoftwareReleaseNode
+            {
+                GroupCategory = groupCategory,
+                Product = product,
+                ReleaseType = releaseType,
+                Version = version,
+                FullVersionTitle = fullVersionTitle,
+                MetadataNote = metadataNote,
+                ReleaseDate = date,
+                SectionHeader = "General Functional Modifications Overview",
+                ContentChunk = text.Length > 4000 ? text.Substring(0, 4000) : text,
+                RefTickets = ""
+            });
+        }
+
+        return chunks;
+    }
 
     // --- Local Strongly-Typed Mapping Data Transfer Objects ---
     private class ReleaseNotesManifestDto { public List<CategoryDto>? Categories { get; set; } }
     private class CategoryDto { public string Name { get; set; } = string.Empty; public List<ProductDto>? Products { get; set; } }
-    private class ProductDto { public string Name { get; set; } = string.Empty; public List<VersionDto>? Versions { get; set; } }
-    private class VersionDto { public string Version { get; set; } = string.Empty; public DateTime ReleaseDate { get; set; } public string RelativeUrl { get; set; } = string.Empty; }
+    private class ProductDto 
+    { 
+        public string Name { get; set; } = string.Empty; 
+        public List<VersionEntryDto>? Latest { get; set; } 
+        public List<VersionEntryDto>? Archive { get; set; } 
+    }
+    private class VersionEntryDto 
+    { 
+        public string Version { get; set; } = string.Empty; 
+        public DateTime ReleaseDate { get; set; } 
+        public string RelativeUrl { get; set; } = string.Empty; 
+        public string Note { get; set; } = string.Empty; 
+    }
 }

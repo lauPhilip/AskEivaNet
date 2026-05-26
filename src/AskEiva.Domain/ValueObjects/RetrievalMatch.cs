@@ -6,6 +6,8 @@ public record RetrievalMatch(
     string Content,
     string SourceUrl,
     float ConfidenceScore,
-    string SourceType, // "Ticket" or "Documentation"
-    List<string> ImageUrls
+    string SourceType, // "Ticket", "Documentation", or "ReleaseNote"
+    List<string> ImageUrls,
+    string ProductContext = "", 
+    string VersionContext = ""  
 );

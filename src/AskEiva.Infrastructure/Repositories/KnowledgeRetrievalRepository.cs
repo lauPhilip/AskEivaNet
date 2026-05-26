@@ -50,6 +50,20 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
                   url
                   _additional { score }
                 }
+                SoftwareReleaseNode(
+                  limit: {{limit}}
+                  hybrid: { query: "{{userQuery}}", alpha: 0.5 }
+                ) {
+                  group_category
+                  product
+                  release_type
+                  version
+                  full_version_title
+                  metadata_note
+                  content_chunk
+                  ref_tickets
+                  _additional { score }
+                }
               }
             }
             """
@@ -69,14 +83,7 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
             {
                 foreach (var node in ticketNodes.EnumerateArray())
                 {
-                    var additional = node.GetProperty("_additional");
-                    var scoreElement = additional.GetProperty("score");
-                    
-                    var scoreStr = scoreElement.ValueKind == JsonValueKind.Number 
-                        ? scoreElement.GetRawText() 
-                        : scoreElement.GetString() ?? "0";
-                    float.TryParse(scoreStr, out var score);
-
+                    float.TryParse(node.GetProperty("_additional").GetProperty("score").GetRawText(), out var score);
                     matches.Add(new RetrievalMatch(
                         SourceId: node.GetProperty("source_id").GetString() ?? string.Empty,
                         Title: node.GetProperty("subject").GetString() ?? "Technical Excerpt",
@@ -94,14 +101,7 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
             {
                 foreach (var node in docNodes.EnumerateArray())
                 {
-                    var additional = node.GetProperty("_additional");
-                    var scoreElement = additional.GetProperty("score");
-                    
-                    var scoreStr = scoreElement.ValueKind == JsonValueKind.Number 
-                        ? scoreElement.GetRawText() 
-                        : scoreElement.GetString() ?? "0";
-                    float.TryParse(scoreStr, out var score);
-
+                    float.TryParse(node.GetProperty("_additional").GetProperty("score").GetRawText(), out var score);
                     matches.Add(new RetrievalMatch(
                         SourceId: node.TryGetProperty("document_id", out var idProp) ? idProp.GetString() ?? string.Empty : string.Empty,
                         Title: node.TryGetProperty("title", out var titleProp) ? (titleProp.GetString() ?? "Documentation Article") : "Documentation Article",
@@ -110,6 +110,31 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
                         ConfidenceScore: score,
                         SourceType: "Documentation",
                         ImageUrls: new()
+                    ));
+                }
+            }
+
+            // 3. Parse Release Notes data blocks dynamically
+            if (root.TryGetProperty("SoftwareReleaseNode", out var releaseNodes))
+            {
+                foreach (var node in releaseNodes.EnumerateArray())
+                {
+                    float.TryParse(node.GetProperty("_additional").GetProperty("score").GetRawText(), out var score);
+                    string product = node.GetProperty("product").GetString() ?? "Product Note";
+                    string version = node.GetProperty("version").GetString() ?? "";
+                    string header = node.GetProperty("section_header").GetString() ?? "Release Spec";
+                    string note = node.TryGetProperty("metadata_note", out var nProp) ? nProp.GetString() ?? string.Empty : string.Empty;
+
+                    matches.Add(new RetrievalMatch(
+                        SourceId: node.TryGetProperty("ref_tickets", out var tProp) ? tProp.GetString() ?? string.Empty : string.Empty,
+                        Title: $"[{product} v{version}] {header}",
+                        Content: node.GetProperty("content_chunk").GetString() ?? string.Empty,
+                        SourceUrl: "https://download.eiva.com/#",
+                        ConfidenceScore: score,
+                        SourceType: "ReleaseNote",
+                        ImageUrls: new(),
+                        ProductContext: product,
+                        VersionContext: version
                     ));
                 }
             }
@@ -125,10 +150,8 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
     public async Task<IEnumerable<KnowledgeTriple>> SearchGraphTriplesAsync(string userQuery, int limit)
     {
         var url = "v1/graphql";
-        
         var query = new
         {
-            // 💡 FIXED: Aligned property search criteria field to use 'evidence_id' so it syncs cleanly with your saved schemas
             query = $$"""
             {
               Get {
@@ -177,10 +200,6 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
         }
     }
 
-    // =================================================================================
-    // 💡 SYSTEM UNMOCKED TELEMETRY INTEGRATIONS (NEW PROPERTIES ADDED FOR DASHBOARD)
-    // =================================================================================
-
     public async Task<int> GetTotalClassCountAsync(string className)
     {
         var jsonQuery = new { query = $"{{ Aggregate {{ {className} {{ meta {{ count }} }} }} }}" };
@@ -226,7 +245,6 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
 
     public async Task<JsonElement> GetRawInteractionLogsAsync(int limit)
     {
-        // 💡 PERFECT MATCH: Queries exactly what you have stored in Weaviate's log matrix
         var jsonQuery = new { query = $"{{ Get {{ InteractionLog(limit: {limit}) {{ query answer was_successful timestamp }} }} }}" };
         try
         {
@@ -242,11 +260,9 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
         return default;
     }
 
-    //  Persists live interactions directly back to Weaviate matching your database schema
     public async Task LogInteractionAsync(string query, string answer, bool wasSuccessful)
     {
         var url = "v1/objects";
-
         var payload = new
         {
             @class = "InteractionLog",
@@ -255,7 +271,7 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
                 query = query,
                 answer = answer,
                 was_successful = wasSuccessful,
-                timestamp = DateTime.UtcNow.ToString("o") // ISO 8601 formatting configuration
+                timestamp = DateTime.UtcNow.ToString("o")
             }
         };
 
@@ -270,46 +286,81 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
         }
     }
 
-    // =================================================================================
-    // 💡 SOFTWARE RELEASE BATCH INGESTION MATRIX PLUG-IN
-    // =================================================================================
-    
-    public async Task BatchIngestReleaseNodesAsync(IEnumerable<SoftwareReleaseNode> nodes)
+public async Task BatchIngestReleaseNodesAsync(IEnumerable<SoftwareReleaseNode> nodes)
     {
         var url = "v1/batch/objects";
         
-        var batchObjects = nodes.Select(node => new
+        // Formats your raw entity items into Weaviate properties records
+        var allBatchObjects = nodes.Select(node => new
         {
             @class = "SoftwareReleaseNode",
             properties = new
             {
+                group_category = node.GroupCategory,
                 product = node.Product,
+                release_type = node.ReleaseType,
                 version = node.Version,
-                release_date = node.ReleaseDate.ToString("o"),
+                full_version_title = node.FullVersionTitle,
+                metadata_note = node.MetadataNote,
+                release_date = node.ReleaseDate.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 section_header = node.SectionHeader,
                 content_chunk = node.ContentChunk,
                 ref_tickets = node.RefTickets
             }
         }).ToList();
 
-        var payload = new { objects = batchObjects };
+        // 💡 FIXED: Split into chunks of 30 nodes to comply with Mistral's internal embedding limits
+        const int MaxMistralBatchSize = 30;
+        int totalIngestedCount = 0;
 
-        try
+        for (int i = 0; i < allBatchObjects.Count; i += MaxMistralBatchSize)
         {
-            var response = await _httpClient.PostAsJsonAsync(url, payload);
-            response.EnsureSuccessStatusCode();
+            var currentChunkPartition = allBatchObjects.Skip(i).Take(MaxMistralBatchSize).ToList();
+            var payload = new { objects = currentChunkPartition };
+
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(url, payload);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"[Weaviate Segment Error] Batch request aborted with status code: {response.StatusCode}");
+                    continue;
+                }
+
+                using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    int segmentSuccessCount = 0;
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("result", out var res) && res.TryGetProperty("errors", out var err))
+                        {
+                            Console.WriteLine($"[Weaviate Batch Object Rejection]: {err.GetRawText()}");
+                        }
+                        else
+                        {
+                            segmentSuccessCount++;
+                        }
+                    }
+                    totalIngestedCount += segmentSuccessCount;
+                    Console.WriteLine($"[Weaviate Ingestion Segment] Successfully vectorized {segmentSuccessCount}/{currentChunkPartition.Count} items.");
+                }
+                
+                // Add a brief 100ms backoff sleep cycle to protect your Mistral API key tier from hitting rate-limits
+                await Task.Delay(100);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Infrastructure Batch Error] Processing track segment collapsed: {ex.Message}");
+            }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Infrastructure Batch Error] Failed pushing release nodes to database: {ex.Message}");
-        }
+
+        Console.WriteLine($"\n[Weaviate Ingestion Engine] Task Finished! Total of {totalIngestedCount} out of {allBatchObjects.Count} records indexed successfully into the cluster.\n");
     }
 
-    // 💡 NEW: Queries Weaviate using filter arguments to verify if a document version is already complete
     public async Task<bool> DoesProductVersionExistAsync(string product, string version)
     {
         var url = "v1/graphql";
-        
         var query = new
         {
             query = $$"""

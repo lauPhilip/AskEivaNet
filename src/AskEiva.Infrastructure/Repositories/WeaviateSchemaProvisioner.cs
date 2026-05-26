@@ -53,23 +53,34 @@ namespace AskEiva.Infrastructure.Repositories
         }
 
         private object CreateSoftwareReleaseSchema()
-        {
-            return new
-            {
-                @class = "SoftwareReleaseNode",
-                description = "Textual chunks and metadata harvested from product software releases and patches",
-                vectorizer = "text2vec-openai", // Targets specific project LLM clustering models
-                properties = new object[]
                 {
-                    new { name = "product", dataType = new[] { "text" }, description = "The targeted product category name.", tokenization = "field" },
-                    new { name = "version", dataType = new[] { "text" }, description = "The concrete version signature string.", tokenization = "field" },
-                    new { name = "release_date", dataType = new[] { "date" }, description = "The official timestamp deployment parameter." },
-                    new { name = "section_header", dataType = new[] { "text" }, description = "The designated sub-module code block origin header line." },
-                    new { name = "content_chunk", dataType = new[] { "text" }, description = "The segmented release log bullet descriptions tracking alterations." },
-                    new { name = "ref_tickets", dataType = new[] { "text" }, description = "Associated Freshdesk or Jira ticket tracking tokens.", tokenization = "word" }
+                    return new
+                    {
+                        @class = "SoftwareReleaseNode",
+                        description = "Textual chunks and metadata harvested from product software releases and patches",
+                        vectorizer = "text2vec-mistral", 
+                        moduleConfig = new
+                        {
+                            @text2vec_mistral = new
+                            {
+                                model = "mistral-embed", 
+                                type = "text"
+                            }
+                        }, 
+                        properties = new object[]
+                        {
+                            new { name = "group_category", dataType = new[] { "text" }, description = "The overall engineering suite category classification (e.g. NaviSuite).", tokenization = "field" },
+                            new { name = "product", dataType = new[] { "text" }, description = "The targeted product category name.", tokenization = "field" },
+                            new { name = "version", dataType = new[] { "text" }, description = "The concrete version signature string.", tokenization = "field" },
+                            new { name = "full_version_title", dataType = new[] { "text" }, description = "The human-readable combined product version string (e.g. NaviPac – 4.13).", tokenization = "field" }, 
+                            new { name = "release_date", dataType = new[] { "date" }, description = "The official timestamp deployment parameter." },
+                            new { name = "metadata_note", dataType = new[] { "text" }, description = "Special distribution footnotes, system constraints, or cross-compatibility warnings.", tokenization = "word" },
+                            new { name = "section_header", dataType = new[] { "text" }, description = "The designated sub-module code block origin header line." },
+                            new { name = "content_chunk", dataType = new[] { "text" }, description = "The segmented release log bullet descriptions tracking alterations." },
+                            new { name = "ref_tickets", dataType = new[] { "text" }, description = "Associated Freshdesk or Jira ticket tracking tokens.", tokenization = "word" }
+                        }
+                    };
                 }
-            };
-        }
 
         private async Task ProvisionClassIfNeededAsync(string className, object schema)
         {

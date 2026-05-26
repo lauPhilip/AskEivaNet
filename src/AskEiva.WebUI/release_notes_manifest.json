@@ -5,19 +5,235 @@
       "Products": [
         {
           "Name": "NaviPac",
-            "Versions": [
-            { "Version": "4.13", "ReleaseDate": "2026-02-16", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac_4-13ReleaseNotes.pdf" },
-            { "Version": "4.11.1", "ReleaseDate": "2025-11-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11.1_Release%20notes.pdf" },
-            { "Version": "4.11", "ReleaseDate": "2025-10-23", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11_Release%20notes.pdf" },
-            { "Version": "4.6.7", "ReleaseDate": "2025-05-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.6.7_Release%20notes.pdf" }
-          ]
-        },
+            "Latest": [
+              { "Version": "NaviPac - 4.13", "ReleaseDate": "2026-02-16", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac_4-13ReleaseNotes.pdf", "Note":"" }
+              ],
+            "Archive": [
+              { "Version": "NaviPac - 4.11.1", "ReleaseDate": "2025-11-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11.1_Release%20notes.pdf", "Note":"Critical Patch: Must be extracted on top of NaviPac 4.11 – Please read the release notes before installing" },
+              { "Version": "NaviPac - 4.11", "ReleaseDate": "2025-10-23", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac - 4.6.7", "ReleaseDate": "2025-05-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.6.7_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac - 4.6.6", "ReleaseDate": "2025-01-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.6.6_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac - 4.6.5", "ReleaseDate": "2024-08-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP465_ReleaseNotes.pdf", "Note":"" },           
+              { "Version": "NaviPac - 4.6.4", "ReleaseDate": "2024-06-18", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP464_ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviPac - 4.6.3", "ReleaseDate": "2024-02-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP463_ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviPac - 4.6.2", "ReleaseDate": "2023-06-16", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac462_ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviPac - 4.6", "ReleaseDate": "2022-10-17", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac46.pdf", "Note":"" },
+              { "Version": "NaviPac - 4.5.8", "ReleaseDate": "2022-09-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP458ReleaseNotes.pdf", "Note":"" }
+            ]},
         {
           "Name": "NaviScan",
-          "Versions": [
-            { "Version": "NaviScan – 9.10.0", "ReleaseDate": "2026-01-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan%209.10.0_Release%20notes.pdf" }
-          ]
-        }
+            "Latest": [
+              { "Version": "NaviScan – 9.10.0", "ReleaseDate": "2026-01-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan%209.10.0_Release%20notes.pdf", "Note":"" }
+              ],
+            "Archive": [
+              { "Version": "NaviScan – 9.9", "ReleaseDate": "2025-07-08", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan%209.9_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.8", "ReleaseDate": "2025-01-27", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan%209.8_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.7.9", "ReleaseDate": "2024-05-27", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan_979.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.7.8", "ReleaseDate": "2024-01-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan_978.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.7.6", "ReleaseDate": "2023-07-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan_976.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.7.4", "ReleaseDate": "2023-02-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan_974.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.7.2", "ReleaseDate": "2022-10-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan_972.pdf", "Note":"This version includes a fix for potential bug using Applanix POSMV (Message Grp 7) for time synchronization in NaviScan." },
+              { "Version": "NaviScan – 9.7.1", "ReleaseDate": "2022-10-07", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan_971.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.7", "ReleaseDate": "2022-07-05", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan_97.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.6.1", "ReleaseDate": "2022-04-05", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan_96.pdf", "Note":"" }
+            ]},
+        {
+          "Name": "NaviEdit",
+            "Latest": [
+              { "Version": "NaviEdit Minimal – 9.2.1", "ReleaseDate": "2026-03-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.2.1_Release%20notes.pdf", "Note":"Patch for NaviEdit 9.2. The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.8+, NaviScan 9.0+" },
+              { "Version": "NaviEdit – 9.2.1", "ReleaseDate": "2026-03-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.2.1_Release%20notes.pdf", "Note":"Patch for 9.2. Compatible with NaviModel 4.8+, NaviScan 9.0+" }
+              ],
+            "Archive": [
+              { "Version": "NaviEdit Minimal – 9.2", "ReleaseDate": "2026-01-07", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.2_Release%20notes.pdf", "Note":"The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.8+, NaviScan 9.0+" },
+              { "Version": "NaviEdit – 9.2", "ReleaseDate": "2026-01-07", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.2_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviEdit Minimal – 9.1", "ReleaseDate": "2025-08-20", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.1_Release%20notes.pdf", "Note":"The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.8+, NaviScan 9.0+" },
+              { "Version": "NaviEdit – 9.1", "ReleaseDate": "2025-08-20", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.1_Release%20notes.pdf", "Note":"Compatible with NaviModel 4.8+, NaviScan 9.0+." },
+              { "Version": "NaviEdit Minimal – 9.0.1", "ReleaseDate": "2025-06-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.0.1_Release%20notes.pdf", "Note":"The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.10, NaviScan 9.8" },
+              { "Version": "NaviEdit – 9.0.1", "ReleaseDate": "2025-06-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.0.1_Release%20notes.pdf", "Note":"Compatible with NaviModel 4.10+, NaviScan 9.8+" },
+              { "Version": "NaviEdit Minimal – 9.0", "ReleaseDate": "2025-04-10", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.0_Release%20notes.pdf", "Note":"The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.10, NaviScan 9.8" },
+              { "Version": "NaviEdit – 9.0", "ReleaseDate": "2025-04-10", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.0_Release%20notes.pdf", "Note":"Compatible with NaviModel 4.10, NaviScan 9.8" },
+              { "Version": "NaviEdit – 8.8.1", "ReleaseDate": "2024-03-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%208.8.1_Release%20notes.pdf", "Note":"Compatible with NaviModel 4.8.X" },
+              { "Version": "NaviEdit Minimal – 8.8.1", "ReleaseDate": "2024-03-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%208.8.1_Release%20notes.pdf", "Note":"The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.8.X" },
+              { "Version": "NaviEdit – 8.8", "ReleaseDate": "2023-09-06", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%208.8_Release%20notes.pdf", "Note":"Compatible with NaviModel 4.8" },
+              { "Version": "NaviEdit Minimal – 8.8", "ReleaseDate": "2023-09-06", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%208.8_Release%20notes.pdf", "Note":"The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.8" },
+              { "Version": "NaviEdit – 8.7.2", "ReleaseDate": "2023-01-06", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit_872.pdf", "Note":"Compatible with NaviModel 4.5/4.6" },
+              { "Version": "NaviEdit Minimal – 8.7.2", "ReleaseDate": "2023-01-06", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit_872.pdf", "Note":"The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.5/4.6" }
+          ]},
+        {
+          "Name": "NaviModel",
+            "Latest": [
+              { "Version": "NaviModel Analyser – 4.13.0", "ReleaseDate": "2026-03-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.13_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Producer – 4.13.0", "ReleaseDate": "2026-03-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.13_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Viewer – 4.13.0", "ReleaseDate": "2026-03-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.13_Release%20notes.pdf", "Note":"" }
+              ],
+            "Archive": [
+              { "Version": "NaviModel Analyser – 4.11", "ReleaseDate": "2025-09-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.11_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Viewer – 4.11", "ReleaseDate": "2025-09-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.11_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Producer – 4.11", "ReleaseDate": "2025-09-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.11_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Viewer – 4.10.2", "ReleaseDate": "2025-05-20", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.10.2_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Analyser – 4.10.2", "ReleaseDate": "2025-05-20", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.10.2_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Producer – 4.10.2", "ReleaseDate": "2025-05-20", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.10.2_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Producer – 4.10.1", "ReleaseDate": "2025-04-15", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.10.1_Release%20notes.pdf", "Note":"Security patch" },
+              { "Version": "NaviModel Analyser – 4.10.1", "ReleaseDate": "2025-04-15", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.10.1_Release%20notes.pdf", "Note":"Security patch" },
+              { "Version": "NaviModel Viewer – 4.10.1", "ReleaseDate": "2025-04-14", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.10.1_Release%20notes.pdf", "Note":"Security patch" },
+              { "Version": "NaviModel Viewer – 4.10", "ReleaseDate": "2025-04-11", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.10_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Analyser – 4.10", "ReleaseDate": "2025-04-11", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.10_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Producer – 4.10", "ReleaseDate": "2025-04-11", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.8.1A.pdf", "Note":"" }
+          ]},
+        {
+          "Name": "NaviPlot",
+            "Latest": [
+              { "Version": "NaviPlot – 2.5", "ReleaseDate": "2016-11-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPlot_ReleaseNotes.pdf", "Note":"" }
+              ]},
+        {
+          "Name": "NaviSuite Beka",
+            "Latest": [
+              { "Version": "NaviPac – 4.13", "ReleaseDate": "2026-02-16", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac_4-13ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviCat – 4.10", "ReleaseDate": "2025-05-21", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Beka_Catenary%20planning%20option%204.10_Release%20notes.pdf", "Note":"" }
+              ],
+            "Archive": [
+              { "Version": "NaviPac – 4.11.1", "ReleaseDate": "2025-11-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11.1_Release%20notes.pdf", "Note":"Critical Patch: Must be extracted on top of NaviPac 4.11 – Please read the release notes before installing" },
+              { "Version": "NaviPac – 4.11", "ReleaseDate": "2025-10-23", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.7", "ReleaseDate": "2025-05-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.6.7_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.6", "ReleaseDate": "2025-01-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.6.6_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.5", "ReleaseDate": "2024-08-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP465_ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.4", "ReleaseDate": "2024-06-18", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP464_ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.3", "ReleaseDate": "2024-02-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP463_ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.2", "ReleaseDate": "2023-06-16", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac462_ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6", "ReleaseDate": "2022-10-17", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac46.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.5.8", "ReleaseDate": "2022-09-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP458ReleaseNotes.pdf", "Note":"" }
+          ]},
+        {
+          "Name": "NaviSuite Nardoa",
+            "Latest": [
+              { "Version": "NaviPac – 4.13", "ReleaseDate": "2026-02-16", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac_4-13ReleaseNotes.pdf", "Note":"" },
+              { "Version": "NaviScan – 9.10.0", "ReleaseDate": "2026-01-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviScan%209.10.0_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviEdit Minimal – 9.2.1", "ReleaseDate": "2026-03-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.2.1_Release%20notes.pdf", "Note":"Patch for NaviEdit 9.2. The minimal installer does not include SQL server and must only be used on top of existing NaviEdit installation. Compatible with NaviModel 4.8+, NaviScan 9.0+" },
+              { "Version": "NaviEdit – 9.2.1", "ReleaseDate": "2026-03-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviEdit%209.2.1_Release%20notes.pdf", "Note":"Patch for 9.2. Compatible with NaviModel 4.8+, NaviScan 9.0+" },
+              { "Version": "NaviModel Analyser – 4.13.0", "ReleaseDate": "2026-03-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.13_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Producer – 4.13.0", "ReleaseDate": "2026-03-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.13_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviModel Viewer – 4.13.0", "ReleaseDate": "2026-03-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviModel%204.13_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPlot – 2.5", "ReleaseDate": "2016-11-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPlot_ReleaseNotes.pdf", "Note":"" }
+              ],
+            "Archive": [
+              { "Version": "NaviPac – 4.11.1", "ReleaseDate": "2025-11-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11.1_Release%20notes.pdf", "Note":"Critical Patch: Must be extracted on top of NaviPac 4.11 – Please read the release notes before installing" },
+              { "Version": "NaviPac – 4.11", "ReleaseDate": "2025-10-23", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.11_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.7", "ReleaseDate": "2025-05-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.6.7_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.6", "ReleaseDate": "2025-01-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviPac%204.6.6_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviPac – 4.6.5", "ReleaseDate": "2024-08-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NP465_ReleaseNotes.pdf", "Note":"" }
+          ]},
+        {
+          "Name": "NaviSuite Uca",
+            "Latest": [
+              { "Version": "NaviSuite Uca – 4.5", "ReleaseDate": "2021-06-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Uca%204.5.pdf", "Note":"" }
+              ],
+            "Archive": [
+              { "Version": "NaviSuite Uca – 4.1", "ReleaseDate": "2017-02-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Uca%204-1_release%20notes.pdf", "Note":"" }
+          ]},
+        {
+          "Name": "Workflow Manager",
+            "Latest": [
+              { "Version": "Workflow Manager demo project – 4.10", "ReleaseDate": "2025-05-14", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Workflow%20Manager%204.10_Release%20notes.pdf", "Note":"Workflow Manager 4.10 demo project" },
+              { "Version": "Workflow Manager – 4.10", "ReleaseDate": "2025-05-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Workflow%20Manager%204.10_Release%20notes.pdf", "Note":"Compatible with NaviEdit 4.9 and NaviModel 4.10" }
+              ],
+            "Archive": [
+              { "Version": "Workflow Manager demo project (NaviSuite Kuda) – 4.8", "ReleaseDate": "2024-05-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Kuda%20demo%20project%20for%20Workflow%20Manager2024.pdf", "Note":"Compatible with NaviModel 4.8 and NaviEdit 8.8" },
+              { "Version": "Workflow Manager – 4.8", "ReleaseDate": "2024-05-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Workflow%20Manager%204.8_Release%20notes.pdf", "Note":"" },
+              { "Version": "Workflow Manager – 4.6", "ReleaseDate": "2022-11-22", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NavisuiteWorkflowManager46.pdf", "Note":"Compatible with NaviEdit 8.7 and NaviModel 4.6" }
+          ]},
+        {
+          "Name": "QuickStitch",
+            "Latest": [
+              { "Version": "QuickStitch – 4.4.2", "ReleaseDate": "2020-10-05", "RelativeUrl": "https://download.eiva.com/DownloadFiles/QuickStich442.pdf", "Note":"Compatible with NaviModel 4.4" }
+              ],
+            "Archive": [
+              { "Version": "QuickStitch – 4.1.4", "ReleaseDate": "2017-07-05", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Notes.txt", "Note":"" },
+              { "Version": "QuickStitch – 3.5", "ReleaseDate": "2016-02-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Notes.txt", "Note":"" }
+          ]},
+        {
+          "Name": "Utility",
+            "Latest": [
+              { "Version": "OnlineQC – 9.2", "ReleaseDate": "2026-03-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/OnlineQC%209.2_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviSuite GeoCalc – 4.11", "ReleaseDate": "2025-10-21", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20GeoCalc%204.11_User%20manual.pdf", "Note":"Geographic calculator as included in NaviPac 4.11" }
+
+              ],
+            "Archive": [
+              { "Version": "OnlineQC – 8.8", "ReleaseDate": "2024-06-06", "RelativeUrl": "https://download.eiva.com/DownloadFiles/OnlineQC88_Release_Notes.pdf", "Note":"Compatible with NaviEdit v 8.8" },
+              { "Version": "QC Toolbox – 4.5.6", "ReleaseDate": "2022-01-21", "RelativeUrl": "https://download.eiva.com/DownloadFiles/QCTB456.pdf", "Note":"Special bundle of NaviEdit, NaviModel, MOVE3 and Catenary option" },
+              { "Version": "QC Toolbox – 4.5.5", "ReleaseDate": "2021-12-06", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ReleaseNotesQCT445.txt", "Note":"Special bundle of NaviEdit, NaviModel, MOVE3 and Catenary option" },
+              { "Version": "OnlineQC – 8.6", "ReleaseDate": "2021-04-14", "RelativeUrl": "https://download.eiva.com/DownloadFiles/OnlineQC86.pdf", "Note":"Compatible with NaviEdit 8.6" },
+              { "Version": "OnlineQC – 8.5", "ReleaseDate": "2020-02-05", "RelativeUrl": "https://download.eiva.com/DownloadFiles/OnlineQC8-5ReleaseNotes.pdf", "Note":"Compatible with NaviEdit 8.5" }
+          ]},
+        {
+          "Name": "Catenary Option",
+            "Latest": [
+              { "Version": "NaviCat – 4.10", "ReleaseDate": "2025-05-21", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Beka_Catenary%20planning%20option%204.10_Release%20notes.pdf", "Note":"" }
+              ],
+            "Archive": [
+              { "Version": "NaviCat – 4.8", "ReleaseDate": "2023-11-07", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Beka_Catenary%20planning%20option%204.8_Release%20notes.pdf", "Note":"Compatible with NaviPac 4.6 and NaviModel 4.6/4.8" },
+              { "Version": "NaviCat – 4.6", "ReleaseDate": "2023-01-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviCat_46.pdf", "Note":"Compatible with NaviPac 4.6 and 4.5.X" },
+              { "Version": "NaviCat – 4.5.2", "ReleaseDate": "2022-01-14", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviCat_452.pdf", "Note":"Compatible with NaviPac 4.5.X" }
+          ]},
+        {
+          "Name": "NaviSuite Mobula",
+            "Latest": [
+              { "Version": "NaviSuite Mobula Processing – 4.8.1", "ReleaseDate": "2024-03-22", "RelativeUrl": "https://download.eiva.com/DownloadFiles/MobulaProcessing4.8.1.pdf", "Note":"Compatible with NaviSuite Mobula 4.7" },
+              { "Version": "NaviSuite Mobula Pro (Blue Robotics) – 4.7.3", "ReleaseDate": "2024-02-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Mobula%204.7.3_Blue%20ROV2_Release%20notesP.pdf", "Note":"" },
+              { "Version": "NaviSuite Mobula Core (Blue Robotics) – 4.7.3", "ReleaseDate": "2024-02-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Mobula%204.7.3_Blue%20ROV2_Release%20notes.pdf", "Note":"" },
+              { "Version": "NaviSuite Mobula Sonar (Blue Robotics) – 4.7.3", "ReleaseDate": "2024-02-24", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Mobula%204.7.3_Blue%20ROV2_Release%20notesS.pdf", "Note":"" },
+              { "Version": "NaviSuite Mobula Pro (VideoRay) – 4.7", "ReleaseDate": "2022-10-10", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Release_notes_Mobula_4.7_VideoRay_DefenderPro.pdf", "Note":"" },
+              { "Version": "NaviSuite Mobula Sonar (VideoRay) – 4.7", "ReleaseDate": "2022-10-10", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Release_notes_Mobula_4.7_VideoRay_DefenderSonar.pdf", "Note":"" }
+              ],
+            "Archive": [
+              { "Version": "NaviSuite Mobula Pro (Blue Robotics) – 4.7.2", "ReleaseDate": "2023-05-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Mobula%204.7.2%20(Blue%20Robotics)_Release%20notes-Pro.pdf", "Note":"" },
+              { "Version": "NaviSuite Mobula Sonar (Blue Robotics) – 4.7.2", "ReleaseDate": "2023-05-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Mobula%204.7.2%20(Blue%20Robotics)_Release%20notes-Sonar.pdf", "Note":"" },
+              { "Version": "NaviSuite Mobula Core (Blue Robotics) – 4.7.2", "ReleaseDate": "2023-05-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Mobula%204.7.2%20(Blue%20Robotics)_Release%20notes-Core.pdf", "Note":"" },
+              { "Version": "NaviSuite Mobula Processing – 4.6.1", "ReleaseDate": "2022-12-14", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Mobula%204.7.2%20(Blue%20Robotics)_Release%20notes-Pro.pdf", "Note":"Compatible with NaviSuite Mobula Sonar & Pro version 4.6/4-7" },
+              { "Version": "NaviSuite Mobula Sonar (Blue Robotics) – 4.7.1A", "ReleaseDate": "2022-12-05", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Mobula%204.7.2%20(Blue%20Robotics)_Release%20notes-Sonar.pdf", "Note":"Support for navigator control board" },
+              { "Version": "NaviSuite Mobula Pro (Blue Robotics) – 4.7.1A", "ReleaseDate": "2022-12-05", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Release_notes_Mobula_4.7.1A_BlueRobotics-Pro.pdf", "Note":"Support for navigator control board" }
+          ]},
+        {
+          "Name": "NaviSuite Kuda",
+            "Latest": [
+              { "Version": "NaviSuite Kuda Processing – 4.11", "ReleaseDate": "2025-11-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Kuda%20Processing%204.11_Release%20notes.pdf", "Note":"Compatible with NaviSuite Kuda Core and Pro 4.8 and older." },
+              { "Version": "NaviSuite Kuda Core – 4.8", "ReleaseDate": "2025-02-05", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Kuda%20Core%204.8_Release%20notes.pdf", "Note":"Compatible with NaviScan version 9.8" }
+
+              ],
+            "Archive": [
+              { "Version": "NaviSuite Kuda Processing – 4.10", "ReleaseDate": "2025-06-02", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Kuda%20Processing%204.10_Release%20notes.pdf", "Note":"Compatible with NaviSuite Kuda Core and Pro 4.8" },
+              { "Version": "NaviSuite Kuda Processing – 4.8.1", "ReleaseDate": "2024-03-22", "RelativeUrl": "https://download.eiva.com/DownloadFiles/KudaProcessing4.8.1.pdf", "Note":"Compatible with NaviSuite Kuda Core and NaviSuite Kuda Pro 4.6 and 4.8" },
+              { "Version": "NaviSuite Kuda Core – 4.6.4", "ReleaseDate": "2024-01-11", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20Kuda%20Core_Release%20notes%204.6.4.pdf", "Note":"" },
+              { "Version": "NaviSuite Kuda Processing – 4.6.1", "ReleaseDate": "2022-12-14", "RelativeUrl": "https://download.eiva.com/DownloadFiles/KudaProcessing4.6.1.pdf", "Note":"Compatible with NaviSuite Kuda Core and NaviSuite Kuda Pro 4.6.X" },
+              { "Version": "NaviSuite Kuda Core – 4.6.3", "ReleaseDate": "2022-12-08", "RelativeUrl": "https://download.eiva.com/DownloadFiles/KudaCore%204.6.3.pdf", "Note":"" }
+          ]},
+        {
+          "Name": "NaviSuite Perio",
+            "Latest": [
+              { "Version": "NaviSuite Perio – 4.6", "ReleaseDate": "2022-01-20", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite_Perio_4.6_Release_Notes.pdf", "Note":"" }
+              ]},
+        {
+          "Name": "NaviSuite QC Toolbox",
+            "Latest": [
+              { "Version": "NaviSuite QC Toolbox – 4.11", "ReleaseDate": "2025-10-31", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20QC%20Toolbox%204.11_Release%20notes.pdf", "Note":"This version is built with NaviModel 4.11, NaviEdit 9.1 and NaviSuite Beka – Caternary planning option 4.10" }
+              ],
+            "Archive": [
+              { "Version": "NaviSuite QC Toolbox – 4.10", "ReleaseDate": "2025-05-28", "RelativeUrl": "https://download.eiva.com/DownloadFiles/NaviSuite%20QC%20Toolbox%204.10_Release%20notes.pdf", "Note":"This version is built with NaviModel 4.10, NaviEdit 9.0, and Catenary planning option 4.10" },
+              { "Version": "NaviSuite QC Toolbox – 4.8", "ReleaseDate": "2023-11-20", "RelativeUrl": "https://download.eiva.com/DownloadFiles/QCToolbox_4.8.pdf", "Note":"Version based on NaviEdit 8.8, NaviModel 4.8 and Catenary Option 4.8" },
+              { "Version": "NaviSuite QC Toolbox – 4.6.1", "ReleaseDate": "2023-01-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/QCToolbox_461.pdf", "Note":"" }
+          ]},
+        {
+          "Name": "Voyis VSLAM Powered by EIVA NaviSuite",
+            "Latest": [
+              { "Version": "Voyis VSLAM Powered by EIVA NaviSuite – 1.5.0", "ReleaseDate": "2026-02-16", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Voyis%20VSLAM%20Powered%20by%20EIVA%20NaviSuite%201.5_Release%20notes.pdf", "Note":"This download contains two executables: Voyis VSLAM and Discovery Powered by EIVA NaviSuite. This is compatible only with Voyis Discovery 2.1.1+. It is recommended to download Voyis Discovery 2.2.0. Please have the correct versions installed to ensure functionality." },
+              { "Version": "Voyis Discovery – 2.2.0", "ReleaseDate": "2026-02-18", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Software%20Release%20Notice%20-%20Discovery%202.2.pdf", "Note":"This Discovery camera firmware update is compatible with Voyis VSLAM Powered by EIVA NaviSuite 1.5+. Updating the firmware can take up to 15 minutes, please ensure the camera is powered on throughout the update." },
+              { "Version": "Voyis VSLAM Powered by EIVA NaviSuite – 1.4", "ReleaseDate": "2025-10-30", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Voyis%20VSLAM%20Powered%20by%20EIVA%20NaviSuite%201.4_Release%20notes.pdf", "Note":"Compatible only with Voyis Discovery 2.1.1+. Please have the correct versions installed to ensure functionality." },
+              { "Version": "Voyis Discovery camera – 2.1.1", "ReleaseDate": "2025-10-30", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Software%20Release%20Notice%20-%20Discovery%202.1.1.pdf", "Note":"This Discovery camera firmware update is compatible with Voyis VSLAM Powered by EIVA NaviSuite 1.4+. Updating the firmware can take up to 15 minutes, please ensure the camera is powered on throughout the update." }
+              ],
+            "Archive": [
+              { "Version": "Voyis Discovery – 2.1.1", "ReleaseDate": "2025-10-30", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Software%20Release%20Notice%20-%20Discovery%202.1.1.pdf", "Note":"This release is only compatible with Voyis VSLAM Powered by EIVA NaviSuite 1.4+. Please ensure you have the latest versions installed to get intended functionality." },
+              { "Version": "Voyis Discovery – 2.1.1", "ReleaseDate": "2025-10-30", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Software%20Release%20Notice%20-%20Discovery%202.1.1.pdf", "Note":"This release is only compatible with Voyis VSLAM Powered by EIVA NaviSuite 1.4+. Please ensure you have the correct version to ensure correct functionality." },
+              { "Version": "Voyis VSLAM Powered by EIVA NaviSuite – 1.3", "ReleaseDate": "2025-07-28", "RelativeUrl": "https://download.eiva.com/DownloadFiles/Voyis%20VSLAM%20Powered%20by%20EIVA%20NaviSuite%201.3_Release%20notes.pdf", "Note":"Version 1.2 and newer are no longer compatible with Voyis APO 2.0.1 and older. Not compatible concurrent with Voyis Discovery GUI. See our knowledge base for more documentation." }
+          ]}
       ]
     },
     {
@@ -25,8 +241,54 @@
       "Products": [
         {
           "Name": "ScanFish",
-          "Versions": [
-            { "Version": "ScanFish Flight – 1.6.4", "ReleaseDate": "2026-04-13", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20Flight%201.6.4_Release%20notes.pdf" }
+            "Latest": [
+              { "Version": "ScanFish Firmware (Congatec) – 1.9.17", "ReleaseDate": "2026-05-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%201.9.17_Release%20notes.pdf", "Note": "WARNING: Make sure to use the correct firmware corresponding to the CPU. Contact EIVA helpdesk if in doubt. Flashing the controller with the wrong firmware, will make it unresponsive and require it to be reflashed at EIVA. Check which BIOS version your ScanFish is currently running, by looking at the main page of the ScanFish web interface." },
+              { "Version": "ScanFish Firmware – 1.9.17", "ReleaseDate": "2026-05-04", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%201.9.17_Release%20notes.pdf", "Note": "WARNING: Make sure to use the correct firmware corresponding to the CPU. Contact EIVA helpdesk if in doubt. Flashing the controller with the wrong firmware, will make it unresponsive and require it to be reflashed at EIVA. Check which BIOS version your ScanFish is currently running, by looking at the main page of the ScanFish web interface." },
+              { "Version": "EIVA HW Config – 1.1.4", "ReleaseDate": "2014-06-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/EIVAHWConfig114.txt", "Note": "No install - just use as it is" },
+              { "Version": "ScanFish Flight – 1.6.4", "ReleaseDate": "2026-04-13", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20Flight%201.6.4_Release%20notes.pdf", "Note": "" }
+              ],
+            "Archive": [
+              { "Version": "ScanFish III Flight – 1.5.5", "ReleaseDate": "2022-03-11", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20Flight%201.5%20release%20notes.pdf", "Note": "" },
+              { "Version": "ScanFish firmware (Congatec) – 1.7.9", "ReleaseDate": "2020-07-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20III%201.7.9%20release%20notes.pdf", "Note": "WARNING: Make sure to use the correct firmware corresponding to the CPU. Contact EIVA helpdesk if in doubt. Flashing the controller with the wrong firmware, will make it unresponsive and require it to be reflashed at EIVA. Check which BIOS version your ScanFish is currently running, by looking at the main page of the ScanFish web interface." },
+              { "Version": "ScanFish firmware – 1.7.9", "ReleaseDate": "2026-07-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20III%201.7.9%20release%20notes.pdf", "Note": "WARNING: Make sure to use the correct firmware corresponding to the CPU. Contact EIVA helpdesk if in doubt. Flashing the controller with the wrong firmware, will make it unresponsive and require it to be reflashed at EIVA. Check which BIOS version your ScanFish is currently running, by looking at the main page of the ScanFish web interface." },
+              { "Version": "Firmware – 1.5.2", "ReleaseDate": "2018-11-26", "RelativeUrl": "https://download.eiva.com/DownloadFiles/SF%20III%20Firmware%201.5.2_congatec.pdf", "Note": "ZIP file with patch - use for correct platform" },
+              { "Version": "Firmware – 1.3.6/1.4.6", "ReleaseDate": "2018-11-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/SF%20III%20Firmware%201.3.6_1.4.6%20Release%20Note.pdf", "Note": "ZIP file with patch - use for correct platform" },
+              { "Version": "ScanFish III Flight – 1.4", "ReleaseDate": "2018-11-19", "RelativeUrl": "https://download.eiva.com/DownloadFiles/SF%20III%20Flight%201.4%20Release%20Note.pdf", "Note": "Compatible with firmware 1.3.6 and 1.4.6" }
+          ]},
+        {
+          "Name": "ViperFish",
+            "Latest": [
+              { "Version": "ScanFish Flight – 1.6.4", "ReleaseDate": "2026-04-13", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20Flight%201.6.4_Release%20notes.pdf", "Note": "" },
+              { "Version": "EIVA HW Config – 1.1.4", "ReleaseDate": "2014-06-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/EIVAHWConfig114.txt", "Note": "No install - just use as it is" }
+              ],
+            "Archive": [
+              { "Version": "ScanFish Flight – 1.6.3", "ReleaseDate": "2026-02-18", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20Flight%201.6.3_Release%20notes.pdf", "Note": "" },
+              { "Version": "ScanFish Flight – 1.6", "ReleaseDate": "2024-07-08", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ScanFish%20Flight%201.6_Release%20notes.pdf", "Note": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "ATTU",
+      "Products": [
+        {
+          "Name": "ATTU Mk II",
+            "Latest": [
+              { "Version": "ATTU Mk II – 1.5.0", "ReleaseDate": "2026-01-15", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ATTU%20Mk%20II%201.5.0_Release%20notes.pdf", "Note": "" }
+              ],
+            "Archive": [
+              { "Version": "ATTU Mk II – 1.4", "ReleaseDate": "2024-11-07", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ATTU%20MK2%201.4_Release%20notes.pdf", "Note": "" },
+              { "Version": "ATTU Mk II – 1.3.2", "ReleaseDate": "2024-03-18", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ATTU%20MK2%20V1.3.2_Release%20notes.pdf", "Note": "" },
+              { "Version": "ATTU Mk II – 1.3.1", "ReleaseDate": "2023-11-09", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ATTU%20MK2%20V1.3_Release%20notes.pdf", "Note": "Fixes a bug where ATTU crashes on launch." }
+          ]},
+        {
+          "Name": "ATTU Mk I",
+            "Latest": [
+              { "Version": "ATTU Mk I – 1.2.14", "ReleaseDate": "2022-12-15", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ATTU_1_2_14.txt", "Note": "" },
+              { "Version": "EIVA HW Config – 1.1.4", "ReleaseDate": "2014-06-03", "RelativeUrl": "https://download.eiva.com/DownloadFiles/EIVAHWConfig114.txt", "Note": "No install - just use as it is" }
+              ],
+            "Archive": [
+              { "Version": "ATTU Mk I – 1.2.14", "ReleaseDate": "2022-12-15", "RelativeUrl": "https://download.eiva.com/DownloadFiles/ATTU_1_2_14.txt", "Note": "" }
           ]
         }
       ]
