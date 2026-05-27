@@ -1,12 +1,16 @@
 @page "/visualization"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @rendermode InteractiveServer
+@implements IDisposable
 
 @using MediatR
+@using AskEiva.Application.Telemetry
 @using AskEiva.Application.Telemetry.Queries
 @using AskEiva.Application.ReleaseNotes.Commands
+@using AskEiva.Application.Tickets.Commands
 @inject IMediator Mediator
 @inject ISnackbar Snackbar
+@inject ISyncTelemetryBroker TelemetryBroker
 
 <PageTitle>EIVA telemetry cockpit</PageTitle>
 
@@ -137,9 +141,89 @@
                 </MudDataGrid>
             </MudPaper>
         </MudItem>
+
+        <MudItem xs="12">
+            <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                <div class="d-flex align-center justify-space-between mb-4">
+                    <div class="d-flex align-center gap-3">
+                        <MudIcon Icon="@Icons.Material.Filled.SyncProblem" Color="Color.Info" />
+                        <MudText Typo="Typo.h6" Style="color: #0A2540; font-weight: 600;">Freshdesk Core Ticket Sync Engine</MudText>
+                    </div>
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Info" 
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.PlayCircleFilled"
+                               OnClick="TriggerTicketIngestionPipeline"
+                               Disabled="@_isSyncing">
+                        @(_isSyncing ? "Crawling Matrix..." : "Run Production Sync")
+                    </MudButton>
+                </div>
+
+                <MudGrid Class="mb-4">
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="pa-3 text-center" Style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Current Crawl Page</MudText>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold mt-1" Style="color: #0A2540;">@_activePage</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="pa-3 text-center" Style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Last Ticket Parsed</MudText>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold mt-1" Style="color: #0284C7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@_lastProcessedId</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="pa-3 text-center" Style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Total New Chunks Indexed</MudText>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold mt-1" Style="color: #16A34A;">@_totalChunksCommitted</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+                <MudText Typo="Typo.caption" Class="font-weight-bold d-block mb-1" Style="color: #64748B;">Live Processing Stream Logs:</MudText>
+                <div style="background: #0F172A; color: #38BDF8; font-family: monospace; font-size: 0.8rem; padding: 12px; height: 160px; overflow-y: auto; border-radius: 6px; border: 1px solid #1E293B;" class="mb-4">
+                    @foreach (var log in _liveLogStream)
+                    {
+                        <div class="mb-1">
+                            <span style="color: #64748B;">[@DateTime.Now.ToString("HH:mm:ss")]</span> @log
+                        </div>
+                    }
+                    @if (_liveLogStream.Count == 0)
+                    {
+                        <div style="color: #64748B;">Console engine idle. Awaiting sync execution trigger signal initialization...</div>
+                    }
+                </div>
+
+                <MudText Typo="Typo.caption" Class="font-weight-bold d-block mb-1" Style="color: #64748B;">Active Ingestion Node Monitoring Grid:</MudText>
+                <MudTable Items="@_processedTicketsHistory" Dense="true" Hover="true" Bordered="false" Elevation="0" Style="border: 1px solid #E2E8F0; border-radius: 6px;" Height="220px" FixedHeader="true">
+                    <HeaderContent>
+                        <MudTh Style="color: #0A2540; font-weight: bold;">Ticket ID</MudTh>
+                        <MudTh Style="color: #0A2540; font-weight: bold;">Subject Reference</MudTh>
+                        <MudTh Style="color: #0A2540; font-weight: bold; text-align: right;">Chunks Extracted</MudTh>
+                        <MudTh Style="color: #0A2540; font-weight: bold; text-align: center;">Sync State</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Ticket ID" Class="font-weight-bold" Style="color: #0A2540;">@context.CurrentTicketId</MudTd>
+                        <MudTd DataLabel="Subject Reference" Style="max-width: 500px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155;">@context.TicketSubject</MudTd>
+                        <MudTd DataLabel="Chunks Extracted" style="text-align: right; font-family: monospace; font-weight: bold; color: #0284C7;">@context.ChunksGenerated</MudTd>
+                        <MudTd DataLabel="Sync State" style="text-align: center;">
+                            <span class="status-badge @context.Status.ToLower()">@context.Status</span>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
         
     </MudGrid>
 </MudContainer>
+
+<style>
+    .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+    .status-badge.processing { background: #FEF3C7; color: #D97706; }
+    .status-badge.success { background: #DCFCE7; color: #16A34A; }
+    .status-badge.skip { background: #F1F5F9; color: #475569; }
+    .status-badge.complete { background: #DBEAFE; color: #2563EB; }
+</style>
 
 @code {
     private bool _isLoading = false;
@@ -148,9 +232,54 @@
     private int _ticketCount = 0;
     private List<InteractionLogItemDto> _interactionLogs = new();
 
+    // 💡 REBORN BROADCAST TELEMETRY PROPERTIES
+    private bool _isSyncing = false;
+    private int _activePage = 1;
+    private string _lastProcessedId = "FD-None";
+    private int _totalChunksCommitted = 0;
+    private List<string> _liveLogStream = new();
+    private List<SyncProgressUpdate> _processedTicketsHistory = new();
+
     protected override async Task OnInitializedAsync()
     {
+        // Bind the singleton execution broker state actions natively on thread hooks
+        TelemetryBroker.OnProgressUpdated += HandleSyncProgressNotification;
         await FetchDashboardTelemetryAsync();
+    }
+
+    private void HandleSyncProgressNotification(SyncProgressUpdate update)
+    {
+        InvokeAsync(() =>
+        {
+            if (!string.IsNullOrWhiteSpace(update.LogMessage))
+            {
+                _liveLogStream.Add(update.LogMessage);
+                if (_liveLogStream.Count > 100) _liveLogStream.RemoveAt(0);
+            }
+
+            if (update.CurrentPage > 0) _activePage = update.CurrentPage;
+            if (update.TotalChunksIndexed > 0) _totalChunksCommitted = update.TotalChunksIndexed;
+
+            if (!string.IsNullOrEmpty(update.CurrentTicketId))
+            {
+                _lastProcessedId = update.CurrentTicketId;
+                
+                var existingRow = _processedTicketsHistory.FirstOrDefault(t => t.CurrentTicketId == update.CurrentTicketId);
+                if (existingRow != null)
+                {
+                    existingRow.ChunksGenerated = update.ChunksGenerated;
+                    existingRow.Status = update.Status;
+                }
+                else
+                {
+                    _processedTicketsHistory.Insert(0, update); // New metrics cascade straight to the top row
+                }
+            }
+
+            if (update.Status == "Complete") _isSyncing = false;
+
+            StateHasChanged();
+        });
     }
 
     private async Task FetchDashboardTelemetryAsync()
@@ -160,9 +289,7 @@
 
         try
         {
-            // Connect directly to the application layer handler query pipeline
             var result = await Mediator.Send(new GetDashboardTelemetryQuery());
-            
             _documentCount = result.TotalUniqueDocuments;
             _ticketCount = result.TotalUniqueTickets;
             _interactionLogs = result.Logs;
@@ -178,17 +305,40 @@
         }
     }
 
-private async Task TriggerReleaseNotesScrapeAsync()
+private async Task TriggerTicketIngestionPipeline()
+    {
+        _isSyncing = true;
+        _liveLogStream.Clear();
+        _processedTicketsHistory.Clear();
+        StateHasChanged();
+
+        try
+        {
+            // 💡 FORCES EXECUTION PASS ACROSS THE ENTIRE HISTORICAL TIMELINE
+            await Mediator.Send(new IngestTicketsCommand());
+            Snackbar?.Add("Global historical support tickets sync sweep successfully completed.", Severity.Success);
+            await FetchDashboardTelemetryAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar?.Add($"Ticket sync channel faulted: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSyncing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TriggerReleaseNotesScrapeAsync()
     {
         _isScraping = true;
         StateHasChanged();
 
         try
         {
-            // Dispatch the automated delta ingestion architecture pipeline via MediatR handlers
             var result = await Mediator.Send(new IngestReleaseNotesCommand());
             
-            // 💡 DEFENSIVE GUARD CHECK: Prevent NullReferenceException if the handler returns default/null
             if (result is null)
             {
                 System.Diagnostics.Debug.WriteLine("[Telemetry Cockpit Warning] IngestReleaseNotesCommand returned a null response payload.");
@@ -196,7 +346,6 @@ private async Task TriggerReleaseNotesScrapeAsync()
                 return;
             }
 
-            // Guard the Snackbar popup call safely in case the MudBlazor provider service mapping isn't fully initialized
             if (result.IsSuccess)
             {
                 if (result.TotalChunksIngested > 0)
@@ -213,7 +362,6 @@ private async Task TriggerReleaseNotesScrapeAsync()
                 Snackbar?.Add(result.StatusDetails ?? "Ingestion processing encountered an anomaly.", Severity.Error);
             }
 
-            // Instantly refresh the visual tracking metrics arrays inside your dashboard view card
             await FetchDashboardTelemetryAsync();
         }
         catch (Exception ex)
@@ -226,5 +374,11 @@ private async Task TriggerReleaseNotesScrapeAsync()
             _isScraping = false;
             StateHasChanged();
         }
+    }
+
+    public void Dispose()
+    {
+        // Unsubscribe safely to prevent runtime background component memory leakage loops
+        TelemetryBroker.OnProgressUpdated -= HandleSyncProgressNotification;
     }
 }

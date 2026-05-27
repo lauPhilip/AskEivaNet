@@ -92,6 +92,8 @@ builder.Services.AddHttpClient<IFreshdeskService, FreshdeskService>(client =>
 })
 .ConfigurePrimaryHttpMessageHandler(() => GetNetworkHandlerForEnvironment());
 
+builder.Services.AddSingleton<AskEiva.Application.Telemetry.ISyncTelemetryBroker, AskEiva.Application.Telemetry.SyncTelemetryBroker>();
+
 // Solutions Manual Crawler
 builder.Services.AddHttpClient<IDocumentationCrawler, DocumentationCrawler>(client =>
 {
@@ -125,10 +127,14 @@ builder.Services.AddHttpClient<WeaviateSchemaProvisioner>(client =>
 // Ticket Repository Client 
 builder.Services.AddHttpClient<ITicketRepository, TicketRepository>(client =>
 {
-    client.BaseAddress = new Uri(weaviateUrl);
-    client.DefaultRequestHeaders.Clear();
-    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanApiKey}");
-    client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
+    client.BaseAddress = new Uri(builder.Configuration["WEAVIATE_URL"] ?? "https://uznwxkhmqa6krcdebigw.c0.europe-west3.gcp.weaviate.cloud/");
+    
+    // 💡 FIXED: Forwards your local user secret token straight to Weaviate cloud so it can calculate the text2vec embeddings!
+    string mistralKey = builder.Configuration["MISTRAL_API_KEY"] ?? string.Empty;
+    if (!string.IsNullOrEmpty(mistralKey))
+    {
+        client.DefaultRequestHeaders.Add("X-Mistral-Api-Key", mistralKey);
+    }
 })
 .ConfigurePrimaryHttpMessageHandler(() => GetNetworkHandlerForEnvironment());
 
