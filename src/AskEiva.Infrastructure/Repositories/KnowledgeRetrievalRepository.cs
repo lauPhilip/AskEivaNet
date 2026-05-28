@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using AskEiva.Domain.Repositories;
 using AskEiva.Domain.ValueObjects;
 using AskEiva.Domain.Entities;
@@ -224,48 +225,75 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
 
 public async Task<int> GetDistinctSourceCountAsync(string className, string propertyName)
 {
-    // 💡 REMINDER: Enclosing GraphQL parameters dynamically inside explicit format string blocks
+    // 💡 THE MEMORY-SAFE STREAMING PASS: We request ONLY the tracking property (e.g., source_id).
+    // Because we leave out the massive 'content' and vector fields, the payload is incredibly tiny.
+    // We set a high limit to capture all chunks in a single fast, timeout-safe network hop.
     var gqlQuery = $$"""
     {
-      Aggregate {
-        {{className}} {
-          {{propertyName}}{
-            count
-          }
+      Get {
+        {{className}}(limit: 50000) {
+          {{propertyName}}
         }
       }
     }
     """;
 
-    try
+try
     {
         var response = await _httpClient.PostAsJsonAsync("v1/graphql", new { query = gqlQuery });
         if (!response.IsSuccessStatusCode) return 0;
 
         using var jsonDoc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         
-        // 💡 FIXED: Accurately maps Weaviate's direct Aggregate nested structural envelope layout
         if (jsonDoc.RootElement.TryGetProperty("data", out var data) &&
-            data.TryGetProperty("Aggregate", out var aggregate) &&
-            aggregate.TryGetProperty(className, out var classBlock) &&
-            classBlock.ValueKind == JsonValueKind.Array && 
-            classBlock.GetArrayLength() > 0)
+            data.TryGetProperty("Get", out var get) &&
+            get.TryGetProperty(className, out var chunkArray) &&
+            chunkArray.ValueKind == JsonValueKind.Array)
         {
-            var targetMetaGroup = classBlock[0];
-            
-            // Step directly inside the property identifier token wrapper (e.g., 'source_id' or 'document_id')
-            if (targetMetaGroup.TryGetProperty(propertyName, out var propertyWrapper) &&
-                propertyWrapper.TryGetProperty("count", out var countValue))
+            var uniqueIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Regex pattern to extract the KB number prefix: Match starts with kb/KB, then digits, followed by an underscore
+            // This captures "Kb_43000623566_" or "kb_43000756150_" and discards the trailing "part_X"
+            var kbPattern = new Regex(@"^(kb_\d+_)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            foreach (var chunk in chunkArray.EnumerateArray())
             {
-                int calculatedTotal = countValue.GetInt32();
-                Console.WriteLine($"[Telemetry Aggregator Check] Resolved true discrete total for {className}.{propertyName} => {calculatedTotal}");
-                return calculatedTotal;
+                if (chunk.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String)
+                {
+                    string rawId = prop.GetString() ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(rawId)) continue;
+
+                    if (className == "DocumentLibrary")
+                    {
+                        // 💡 EXTRACT PARENT DOCUMENT KEY:
+                        // Look for the clean "kb_number_" prefix pattern matching your naming rule
+                        var match = kbPattern.Match(rawId);
+                        if (match.Success)
+                        {
+                            // 💡 FIXED: Uses standard .ToLowerInvariant() to keep cross-platform strings perfectly clean
+                            uniqueIds.Add(match.Value.ToLowerInvariant()); 
+                        }
+                        else
+                        {
+                            // Fallback just in case a manual document entry doesn't use the 'part' suffix structure
+                            uniqueIds.Add(rawId.ToLowerInvariant());
+                        }
+                    }
+                    else
+                    {
+                        // Standard handling for support tickets (e.g., "FD-81488")
+                        uniqueIds.Add(rawId);
+                    }
+                }
             }
+
+            Console.WriteLine($"[Application Telemetry Engine] Cleaned {chunkArray.GetArrayLength()} chunks for {className}. Unique Parents Found: {uniqueIds.Count}");
+            return uniqueIds.Count;
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[Telemetry Aggregation Error] Failed compiling distinct count for {className}: {ex.Message}");
+        Console.WriteLine($"[Telemetry Aggregation Error] Failed matching custom text filters for {className}: {ex.Message}");
     }
 
     return 0;

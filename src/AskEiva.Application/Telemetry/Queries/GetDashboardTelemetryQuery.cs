@@ -13,6 +13,7 @@ public record GetDashboardTelemetryQuery : IRequest<TelemetryDashboardResult>;
 public record TelemetryDashboardResult(
     int TotalUniqueDocuments,
     int TotalUniqueTickets,
+    int TotalSoftwareReleases,
     List<InteractionLogItemDto> Logs
 );
 
@@ -35,12 +36,12 @@ public class GetDashboardTelemetryQueryHandler : IRequestHandler<GetDashboardTel
 
 public async Task<TelemetryDashboardResult> Handle(GetDashboardTelemetryQuery request, CancellationToken cancellationToken)
     {
-        // 1. Run calculations across Weaviate concurrently using our optimized meta count
-        var docsTask = _retrievalRepository.GetDistinctSourceCountAsync("DocumentLibrary", "url"); //document_id
+        var docsTask = _retrievalRepository.GetDistinctSourceCountAsync("DocumentLibrary", "document_id");
         var ticketsTask = _retrievalRepository.GetDistinctSourceCountAsync("KnowledgeNode", "source_id"); 
+        var releaseTask = _retrievalRepository.GetDistinctSourceCountAsync("SoftwareReleaseNode", "source_id"); 
         var logsTask = _retrievalRepository.GetRawInteractionLogsAsync(limit: 50);
 
-        await Task.WhenAll(docsTask, ticketsTask);
+        await Task.WhenAll(docsTask, ticketsTask, releaseTask);
 
         var logsResult = await logsTask;
         var activeLogs = new List<InteractionLogItemDto>();
@@ -79,7 +80,8 @@ public async Task<TelemetryDashboardResult> Handle(GetDashboardTelemetryQuery re
         // 3. Return the fully computed counts right out of our repository task results
         return new TelemetryDashboardResult(
             TotalUniqueDocuments: docsTask.Result,
-            TotalUniqueTickets: ticketsTask.Result, // 💡 Maps the exact unique counts now!
+            TotalUniqueTickets: ticketsTask.Result, 
+            TotalSoftwareReleases: releaseTask.Result,
             Logs: activeLogs
         );
     }

@@ -1,0 +1,524 @@
+@page "/configurationportal"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode InteractiveServer
+@implements IDisposable
+
+@using MediatR
+@using AskEiva.Application.Telemetry
+@using AskEiva.Application.Telemetry.Queries
+@using AskEiva.Application.ReleaseNotes.Commands
+@using AskEiva.Application.Tickets.Commands
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+@inject ISyncTelemetryBroker TelemetryBroker
+
+<PageTitle>AskEIVA Admin Configuration Portal</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
+    
+    <!-- HEADER BAR WITH EIVA BRANDING VIBE -->
+    <div class="d-flex align-center justify-space-between mb-6 pa-2">
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #0A2540; font-family: 'Segoe UI', sans-serif;">Configuration Portal</MudText>
+            <MudText Typo="Typo.body2" Style="color: #64748B;">Central data management, ingestion filters, and operational metrics for AskEiva.</MudText>
+        </div>
+        <div class="d-flex align-center gap-2">
+            <MudButton Variant="Variant.Filled" 
+                       Size="Size.Small" 
+                       StartIcon="@Icons.Material.Filled.Refresh" 
+                       Style="background-color: #FFFFFF; color: #0A2540; border: 1px solid #E2E8F0; font-weight: bold;"
+                       OnClick="FetchDashboardTelemetryAsync"
+                       Disabled="_isLoading">
+                @(_isLoading ? "Querying Weaviate..." : "Refresh Data")
+            </MudButton>
+        </div>
+    </div>
+
+    <!-- =================================================================================== -->
+    <!-- LAYER 1: KPI OVERVIEW ROW -->
+    <!-- =================================================================================== -->
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="0" Class="pa-4 d-flex align-center justify-space-between" Style="border: 1px solid #E2E8F0; border-radius: 8px; background-color: #FFFFFF;">
+                <div>
+                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Document Library</MudText>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #0A2540;">@_documentCount.ToString("N0")</MudText>
+                    <MudText Typo="Typo.caption" Style="color: #059669; font-weight: 500;">● Unique Documentation</MudText>
+                </div>
+                <MudIcon Icon="@Icons.Material.Filled.LibraryBooks" Style="color: #F1F5F9; font-size: 3rem;" />
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="0" Class="pa-4 d-flex align-center justify-space-between" Style="border: 1px solid #E2E8F0; border-radius: 8px; background-color: #FFFFFF;">
+                <div>
+                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Unique Tickets</MudText>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #0A2540;">@_ticketCount.ToString("N0")</MudText>
+                    <MudText Typo="Typo.caption" Style="color: #0284C7; font-weight: 500;">● Freshdesk Vector Nodes</MudText>
+                </div>
+                <MudIcon Icon="@Icons.Material.Filled.ConfirmationNumber" Style="color: #F1F5F9; font-size: 3rem;" />
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="0" Class="pa-4 d-flex align-center justify-space-between" Style="border: 1px solid #E2E8F0; border-radius: 8px; background-color: #FFFFFF;">
+                <div>
+                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Software Releases</MudText>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #0A2540;">@_releaseCount.ToString("N0")</MudText>
+                    <MudText Typo="Typo.caption" Style="color: #EA580C; font-weight: 500;">● Active Release Chunks</MudText>
+                </div>
+                <MudIcon Icon="@Icons.Material.Filled.NewReleases" Style="color: #F1F5F9; font-size: 3rem;" />
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="0" Class="pa-4 d-flex align-center justify-space-between" Style="border: 1px solid #E2E8F0; border-radius: 8px; background-color: #FFFFFF;">
+                <div>
+                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Total User Dialogue</MudText>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #0A2540;">@_interactionLogs.Count.ToString("N0")</MudText>
+                    <MudText Typo="Typo.caption" Style="color: #7C3AED; font-weight: 500;">● Dialogue Captured</MudText>
+                </div>
+                <MudIcon Icon="@Icons.Material.Filled.Forum" Style="color: #F1F5F9; font-size: 3rem;" />
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <br /><br />
+
+    <!-- =================================================================================== -->
+    <!-- LAYER 2: DEDICATED SECTION WITH ONLY CHAT DIALOGUE TABLE -->
+    <!-- =================================================================================== -->
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Elevation="0" Class="pa-5" Style="border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between gap-3 mb-4">
+                    <div class="d-flex align-center gap-3">
+                        <MudIcon Icon="@Icons.Material.Filled.HistoryEdu" Style="color: #0A2540;" />
+                        <MudText Typo="Typo.h6" Style="color: #0A2540; font-weight: 600;">Conversation Log</MudText>
+                    </div>
+                    
+                    <MudTextField @bind-Value="_searchString" 
+                                  Placeholder="Search question or response text..." 
+                                  Adornment="Adornment.Start" 
+                                  AdornmentIcon="@Icons.Material.Filled.Search" 
+                                  IconSize="Size.Small" 
+                                  Class="mt-0"
+                                  Clearable="true"
+                                  Style="width: 320px;"
+                                  Margin="Margin.Dense" 
+                                  Variant="Variant.Outlined" />
+                </div>
+
+                <MudDataGrid Items="@_interactionLogs" 
+                             T="InteractionLogItemDto" 
+                             QuickFilter="@QuickSearchFilter"
+                             Loading="_isLoading" 
+                             Bordered="false" 
+                             Dense="true" 
+                             Hover="true"
+                             Filterable="true" 
+                             FilterMode="DataGridFilterMode.ColumnFilterMenu">
+                    <Columns>
+                        <HierarchyColumn T="InteractionLogItemDto" />
+                        
+                        <PropertyColumn Property="x => x.Timestamp" 
+                                        Title="Timestamp" 
+                                        Format="yyyy-MM-dd HH:mm:ss" 
+                                        Sortable="true" 
+                                        HeaderStyle="color: #0A2540; font-weight: bold; width: 180px;" />
+                        
+                        <PropertyColumn Property="x => x.UserPrompt" 
+                                        Title="User Question" 
+                                        Sortable="true" 
+                                        HeaderStyle="color: #0A2540; font-weight: bold;" />
+                        
+                        <PropertyColumn Property="x => x.CopilotResponse" 
+                                        Title="Response Snippet" 
+                                        Sortable="false" 
+                                        Filterable="false"
+                                        HeaderStyle="color: #0A2540; font-weight: bold;" 
+                                        CellStyle="text-overflow: ellipsis; max-width: 350px; white-space: nowrap; overflow: hidden; color: #64748B;" />
+                        
+                        <PropertyColumn Property="x => x.FeedbackState" 
+                                        Title="Feedback" 
+                                        Sortable="true" 
+                                        HeaderStyle="color: #0A2540; font-weight: bold; width: 140px;" />
+                        
+                        <PropertyColumn Property="x => x.ModelUsed" 
+                                        Title="Model" 
+                                        Sortable="true" 
+                                        HeaderStyle="color: #0A2540; font-weight: bold; width: 180px; font-family: monospace;" />
+                    </Columns>
+                    <ChildRowContent>
+                        <MudCard Style="background: #F8FAFC; border-radius: 0; box-shadow: none; border-top: 1px solid #E2E8F0;" Class="pa-4">
+                            <MudGrid>
+                                <MudItem xs="12">
+                                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-1" Style="color: #0A2540;">📥 User Prompt Input:</MudText>
+                                    <div class="pa-3 mb-3 bg-white border rounded" style="color: #334155; font-size: 0.9rem; line-height: 1.5; border-color: #E2E8F0;">
+                                        @context.Item.UserPrompt
+                                    </div>
+                                    
+                                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-1" Style="color: #0A2540;">🤖 AskEIVA System Response:</MudText>
+                                    <div class="pa-3 bg-white border rounded" style="color: #334155; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; border-color: #E2E8F0;">
+                                        @context.Item.CopilotResponse
+                                    </div>
+                                </MudItem>
+                            </MudGrid>
+                        </MudCard>
+                    </ChildRowContent>
+                    <PagerContent>
+                        <MudDataGridPager T="InteractionLogItemDto" PageSizeOptions="new int[]{5, 10, 20}" />
+                    </PagerContent>
+                </MudDataGrid>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <br /><br />
+
+    <!-- =================================================================================== -->
+    <!-- LAYER 3: DEDICATED SECTION FOR DOCUMENTATION RELATED FUNCTIONS -->
+    <!-- =================================================================================== -->
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Elevation="0" Class="pa-5" Style="border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                <div class="d-flex align-center justify-space-between mb-3">
+                    <div class="d-flex align-center gap-3">
+                        <MudIcon Icon="@Icons.Material.Filled.LibraryBooks" Style="color: #0A2540;" />
+                        <MudText Typo="Typo.h6" Style="color: #0A2540; font-weight: 600;">Documentation Library</MudText>
+                    </div>
+                </div>
+                <MudText Typo="Typo.body2" Class="mb-4 mt-1">
+                    <span style="color: #64748B;">Manages the vectorization state of core EIVA manual assets, user manuals, and articles stored within the database. Access the raw records directly on the </span>
+                    <a href="https://eiva.freshdesk.com/support/home" 
+                       target="_blank" 
+                       style="color: #0284C7; font-weight: bold; text-decoration: none; border-bottom: 1px dashed #0284C7;"
+                       class="hover-link">
+                        EIVA Freshdesk Support Portal <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Style="font-size: 0.9rem; vertical-align: text-bottom;" />
+                    </a>
+                </MudText>
+                
+                <MudDivider Class="my-4" Style="background-color: #E2E8F0;" />
+                
+                <div class="d-flex align-center gap-4">
+                    <MudPaper Class="pa-3 px-6 d-flex align-center gap-3" Elevation="0" Style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                        <MudText Typo="Typo.body2" Style="color: #0A2540; font-weight: bold;">Active Knowledge Base Docs:</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Style="font-weight: bold;">@_documentCount Verified</MudChip>
+                    </MudPaper>
+                    
+                    <!-- Placeholder button for future documentation utilities (e.g., reindexing files) -->
+                    <MudButton Variant="Variant.Outlined" 
+                               Size="Size.Small" 
+                               StartIcon="@Icons.Material.Filled.FolderZip"
+                               Style="border: 1px solid #E2E8F0; color: #64748B;"
+                               Disabled="true">
+                        Re-Index Doc Assets (Regulated)
+                    </MudButton>
+                </div>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <br /><br />
+
+    <!-- =================================================================================== -->
+    <!-- LAYER 4: DEDICATED SECTION FOR RELEASE NOTES SCRAPER & MANIFESTS -->
+    <!-- =================================================================================== -->
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Elevation="0" Class="pa-5" Style="border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                <div class="d-flex align-center justify-space-between mb-3">
+                    <div class="d-flex align-center gap-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Description" Style="color: #0A2540;" />
+                        <MudText Typo="Typo.h6" Style="color: #0A2540; font-weight: 600;">Software Release Notes Extractor</MudText>
+                    </div>
+                    
+                    <!-- Matches EIVA Download Site button style using their theme logic -->
+                    <MudButton Variant="Variant.Filled" 
+                               Style="background-color: #C5DC22; color: #0A2540; font-weight: bold; box-shadow: none;" 
+                               Size="Size.Small" 
+                               StartIcon="@Icons.Material.Filled.CloudDownload" 
+                               OnClick="TriggerReleaseNotesScrapeAsync"
+                               Disabled="_isScraping">
+                        @(_isScraping ? "Parsing Manifest PDF..." : "Sync Latest Release Notes")
+                    </MudButton>
+                </div>
+            <MudText Typo="Typo.body2" Class="mb-4">
+                    <span style="color: #64748B;">Scrapes and segments release updates (e.g., NaviPac, NaviScan, NaviEdit manifests) straight into embedded semantic structures. Track live builds directly on the </span>
+                    <a href="https://download.eiva.com" 
+                       target="_blank" 
+                       style="color: #0284C7; font-weight: bold; text-decoration: none; border-bottom: 1px dashed #0284C7;"
+                       class="hover-link">
+                        EIVA Download Site <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Style="font-size: 0.9rem; vertical-align: text-bottom;" />
+                    </a>
+                </MudText>
+
+<MudAlert Severity="Severity.Normal" NoIcon="true" Dense="true" Class="mt-2" Style="background-color: #F8FAFC; border: 1px solid #E2E8F0; color: #334155;">
+                    <div class="d-flex align-center gap-2 font-small" style="font-size: 0.85rem;">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Style="color: #EA580C;" />
+                        <span>System tracking matches historical data points across <strong>@_releaseCount</strong> localized package nodes.</span>
+                    </div>
+                </MudAlert>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <br /><br />
+
+    <!-- =================================================================================== -->
+    <!-- LAYER 5: DEDICATED SECTION FOR FRESHDESK TICKETS SYNC/CHUNKING -->
+    <!-- =================================================================================== -->
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Elevation="0" Class="pa-5" Style="border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                <div class="d-flex align-center justify-space-between mb-4">
+                    <div class="d-flex align-center gap-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Sync" Style="color: #0A2540;" />
+                        <MudText Typo="Typo.h6" Style="color: #0A2540; font-weight: 600;">Freshdesk Enterprise Ticket Sync Pipeline</MudText>
+                    </div>
+                    
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Info" 
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.PlayCircleFilled"
+                               OnClick="TriggerTicketIngestionPipeline"
+                               Disabled="@_isSyncing"
+                               Style="font-weight: bold; box-shadow: none;">
+                        @(_isSyncing ? "Executing Global Run..." : "Run Core Production Sync")
+                    </MudButton>
+                </div>
+                <MudText Typo="Typo.body2" Class="mb-4">
+                    <span style="color: #64748B;">Performs a historical sweep over Freshdesk, parses dialog trees into semantic nodes, and batches data objects into Weaviate. Inspect individual items on the </span>
+                    <a href="https://eiva.freshdesk.com/a/tickets/" 
+                       target="_blank" 
+                       style="color: #0284C7; font-weight: bold; text-decoration: none; border-bottom: 1px dashed #0284C7;"
+                       class="hover-link">
+                        Freshdesk Tickets <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Style="font-size: 0.9rem; vertical-align: text-bottom;" />
+                    </a>
+                </MudText>
+
+                <MudGrid Class="mb-4">
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="pa-3 text-center" Elevation="0" Style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Current Crawl Page</MudText>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold mt-1" Style="color: #0A2540;">@_activePage</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="pa-3 text-center" Elevation="0" Style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Last Ticket Parsed</MudText>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold mt-1" Style="color: #0284C7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@_lastProcessedId</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="pa-3 text-center" Elevation="0" Style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #64748B; text-transform: uppercase;">Global Chunks Vectorized</MudText>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold mt-1" Style="color: #16A34A;">@_totalChunksCommitted</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+                <MudText Typo="Typo.caption" Class="font-weight-bold d-block mb-1" Style="color: #64748B;">Live Sync Stream Terminal Monitor:</MudText>
+                <div style="background: #0F172A; color: #38BDF8; font-family: 'Consolas', monospace; font-size: 0.8rem; padding: 14px; height: 160px; overflow-y: auto; border-radius: 6px; border: 1px solid #1E293B;" class="mb-4">
+                    @foreach (var log in _liveLogStream)
+                    {
+                        <div class="mb-1">
+                            <span style="color: #64748B;">[@DateTime.Now.ToString("HH:mm:ss")]</span> @log
+                        </div>
+                    }
+                    @if (_liveLogStream.Count == 0)
+                    {
+                        <div style="color: #64748B;">Console engine idle. Awaiting configuration stream initialization update signal...</div>
+                    }
+                </div>
+
+                <MudText Typo="Typo.caption" Class="font-weight-bold d-block mb-1" Style="color: #64748B;">Active Ingestion Batch Progress Tracker:</MudText>
+                <MudTable Items="@_processedTicketsHistory" Dense="true" Hover="true" Bordered="false" Elevation="0" Style="border: 1px solid #E2E8F0; border-radius: 6px;" Height="200px" FixedHeader="true">
+                    <HeaderContent>
+                        <MudTh Style="color: #0A2540; font-weight: bold;">Ticket Reference</MudTh>
+                        <MudTh Style="color: #0A2540; font-weight: bold;">Subject</MudTh>
+                        <MudTh Style="color: #0A2540; font-weight: bold; text-align: right;">Extracted Parts</MudTh>
+                        <MudTh Style="color: #0A2540; font-weight: bold; text-align: center;">Pipeline State</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Ticket Reference" Class="font-weight-bold" Style="color: #0A2540;">@context.CurrentTicketId</MudTd>
+                        <MudTd DataLabel="Subject" Style="max-width: 450px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155;">@context.TicketSubject</MudTd>
+                        <MudTd DataLabel="Extracted Parts" style="text-align: right; font-family: monospace; font-weight: bold; color: #0284C7;">@context.ChunksGenerated</MudTd>
+                        <MudTd DataLabel="Pipeline State" style="text-align: center;">
+                            <span class="status-badge @context.Status.ToLower()">@context.Status</span>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+</MudContainer>
+
+<style>
+    .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+    .status-badge.processing { background: #FEF3C7; color: #D97706; }
+    .status-badge.success { background: #DCFCE7; color: #16A34A; }
+    .status-badge.skip { background: #F1F5F9; color: #475569; }
+    .status-badge.complete { background: #DBEAFE; color: #2563EB; }
+</style>
+
+@code {
+    private bool _isLoading = false;
+    private bool _isScraping = false;
+    private int _documentCount = 0;
+    private int _ticketCount = 0;
+    private int _releaseCount = 0;
+    private string _searchString = "";
+    private List<InteractionLogItemDto> _interactionLogs = new();
+
+    private bool _isSyncing = false;
+    private int _activePage = 1;
+    private string _lastProcessedId = "FD-None";
+    private int _totalChunksCommitted = 0;
+    private List<string> _liveLogStream = new();
+    private List<SyncProgressUpdate> _processedTicketsHistory = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        TelemetryBroker.OnProgressUpdated += HandleSyncProgressNotification;
+        await FetchDashboardTelemetryAsync();
+    }
+
+    private bool QuickSearchFilter(InteractionLogItemDto item)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString)) return true;
+        
+        if (item.UserPrompt.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        if (item.CopilotResponse.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        if (item.ModelUsed.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        if (item.FeedbackState.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        
+        return false;
+    }
+
+    private void HandleSyncProgressNotification(SyncProgressUpdate update)
+    {
+        InvokeAsync(() =>
+        {
+            if (!string.IsNullOrWhiteSpace(update.LogMessage))
+            {
+                _liveLogStream.Add(update.LogMessage);
+                if (_liveLogStream.Count > 100) _liveLogStream.RemoveAt(0);
+            }
+
+            if (update.CurrentPage > 0) _activePage = update.CurrentPage;
+            if (update.TotalChunksIndexed > 0) _totalChunksCommitted = update.TotalChunksIndexed;
+
+            if (!string.IsNullOrEmpty(update.CurrentTicketId))
+            {
+                _lastProcessedId = update.CurrentTicketId;
+                
+                var existingRow = _processedTicketsHistory.FirstOrDefault(t => t.CurrentTicketId == update.CurrentTicketId);
+                if (existingRow != null)
+                {
+                    existingRow.ChunksGenerated = update.ChunksGenerated;
+                    existingRow.Status = update.Status;
+                }
+                else
+                {
+                    _processedTicketsHistory.Insert(0, update);
+                }
+            }
+
+            if (update.Status == "Complete") _isSyncing = false;
+
+            StateHasChanged();
+        });
+    }
+
+    private async Task FetchDashboardTelemetryAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Mediator.Send(new GetDashboardTelemetryQuery());
+            _documentCount = result.TotalUniqueDocuments;
+            _ticketCount = result.TotalUniqueTickets;
+            _releaseCount = result.TotalSoftwareReleases;
+            _interactionLogs = result.Logs;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Telemetry engine error: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TriggerTicketIngestionPipeline()
+    {
+        _isSyncing = true;
+        _liveLogStream.Clear();
+        _processedTicketsHistory.Clear();
+        StateHasChanged();
+
+        try
+        {
+            await Mediator.Send(new IngestTicketsCommand());
+            Snackbar?.Add("Global historical support tickets sync sweep successfully completed.", Severity.Success);
+            await FetchDashboardTelemetryAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar?.Add($"Ticket sync channel faulted: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSyncing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TriggerReleaseNotesScrapeAsync()
+    {
+        _isScraping = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await Mediator.Send(new IngestReleaseNotesCommand());
+            
+            if (result is null)
+            {
+                Snackbar?.Add("Ingestion sequence returned an empty response.", Severity.Warning);
+                return;
+            }
+
+            if (result.IsSuccess)
+            {
+                Snackbar?.Add(result.StatusDetails ?? "Release notes processed successfully.", result.TotalChunksIngested > 0 ? Severity.Success : Severity.Info);
+            }
+            else
+            {
+                Snackbar?.Add(result.StatusDetails ?? "Scraper anomaly detected.", Severity.Error);
+            }
+
+            await FetchDashboardTelemetryAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar?.Add($"Scraping pipeline fault: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isScraping = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        TelemetryBroker.OnProgressUpdated -= HandleSyncProgressNotification;
+    }
+}
