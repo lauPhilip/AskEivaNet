@@ -98,12 +98,61 @@ namespace AskEiva.Infrastructure.Repositories
                 await ProvisionClassIfNeededAsync("SoftwareReleaseNode", releaseNotesSchema);
 
                 await EnsureKnowledgeNodeClassAsync();
+                await EnsureJiraSchemaAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogCritical(ex, "An unhandled exception collapsed the global schema configuration loop.");
             }
         }
+
+        private async Task EnsureJiraSchemaAsync()
+    {
+        try
+        {
+            // Verify if the Jira collection already exists in your Weaviate cloud instance
+            var checkResponse = await _httpClient.GetAsync("v1/schema/JiraIssueNode");
+            if (checkResponse.IsSuccessStatusCode)
+            {
+                Console.WriteLine("[Weaviate Provisioner] Class 'JiraIssueNode' already provisioned.");
+                return;
+            }
+
+            // Define the explicit schema matching your production Jira domain attributes
+            var jiraSchema = new
+            {
+                @class = "JiraIssueNode",
+                description = "Stores segmented, semantic text chunks extracted from EIVA's Atlassian Jira issue logs.",
+                vectorizer = "text2vec-mistral", // Ties directly into your existing vectorizer setup
+                properties = new[]
+                {
+                    new { name = "jira_id", dataType = new[] { "string" }, description = "The raw database GUID identifier string from Jira." },
+                    new { name = "issue_key", dataType = new[] { "string" }, description = "The readable issue tag key (e.g., NAVIPAC-1234)." },
+                    new { name = "project_key", dataType = new[] { "string" }, description = "The core software product abbreviation code." },
+                    new { name = "issue_type", dataType = new[] { "string" }, description = "The task classification archetype (Bug, Feature, Task)." },
+                    new { name = "status_state", dataType = new[] { "string" }, description = "The current lifecycle workflow state." },
+                    new { name = "summary", dataType = new[] { "text" }, description = "The plain text subject line headline of the issue card." },
+                    new { name = "content", dataType = new[] { "text" }, description = "The flattened clean description text combined with chronological comment lines." }
+                }
+            };
+
+            var createResponse = await _httpClient.PostAsJsonAsync("v1/schema", jiraSchema);
+            if (createResponse.IsSuccessStatusCode)
+            {
+                Console.WriteLine("[Weaviate Provisioner] Success! Class 'JiraIssueNode' has been provisioned globally.");
+            }
+            else
+            {
+                string errors = await createResponse.Content.ReadAsStringAsync();
+                Console.WriteLine($"[Weaviate Provisioner] Critical error building Jira schema template: {errors}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Weaviate Provisioner] Jira schema generation channel encountered an anomaly: {ex.Message}");
+        }
+    }
+
 
         private object CreateSoftwareReleaseSchema()
                 {

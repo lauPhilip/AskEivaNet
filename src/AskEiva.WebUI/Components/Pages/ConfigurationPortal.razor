@@ -8,9 +8,11 @@
 @using AskEiva.Application.Telemetry.Queries
 @using AskEiva.Application.ReleaseNotes.Commands
 @using AskEiva.Application.Tickets.Commands
+@using AskEiva.Domain.Services
 @inject IMediator Mediator
 @inject ISnackbar Snackbar
 @inject ISyncTelemetryBroker TelemetryBroker
+@inject IJiraService JiraService
 
 <PageTitle>AskEIVA Admin Configuration Portal</PageTitle>
 
@@ -352,6 +354,45 @@
             </MudPaper>
         </MudItem>
     </MudGrid>
+    <br /><br />
+
+    <!-- =================================================================================== -->
+    <!-- LAYER 5: DEDICATED SECTION FOR JIRA SYNC/CHUNKING -->
+    <!-- =================================================================================== -->
+
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Elevation="0" Class="pa-5" Style="border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                <div class="d-flex align-center justify-space-between mb-3">
+                    <div class="d-flex align-center gap-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Troubleshoot" Style="color: #0A2540;" />
+                        <MudText Typo="Typo.h6" Style="color: #0A2540; font-weight: 600;">Jira Gateway Connectivity Sandbox</MudText>
+                    </div>
+                    
+                    <MudButton Variant="Variant.Filled" 
+                               Style="background-color: #C5DC22; color: #0A2540; font-weight: bold; box-shadow: none;" 
+                               Size="Size.Small" 
+                               StartIcon="@Icons.Material.Filled.CastConnected" 
+                               OnClick="RunJiraLiveDiagnosticTest"
+                               Disabled="_isTestingJira">
+                        @(_isTestingJira ? "Pinging Gateway..." : "Run Connection Test")
+                    </MudButton>
+                </div>
+                
+                <MudText Typo="Typo.body2" Class="mb-4">
+                    <span style="color: #64748B;">Queries live tracking tickets directly via the cloud tenant proxy layout. Access raw ticket tasks inside the external workspace </span>
+                    <a href="https://eivasw.atlassian.net/" target="_blank" style="color: #0284C7; font-weight: bold; text-decoration: none; border-bottom: 1px dashed #0284C7;">Atlassian Workcenter <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Style="font-size: 0.9rem; vertical-align: text-bottom;" /></a>
+                </MudText>
+
+                @if (!string.IsNullOrWhiteSpace(_jiraDiagnosticStatus))
+                {
+                    <div class="pa-3 border rounded font-monospace" style="background-color: #0F172A; color: #34D399; font-size: 0.85rem; max-height: 140px; overflow-y: auto;">
+                        @_jiraDiagnosticStatus
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 
 </MudContainer>
 
@@ -366,6 +407,8 @@
 @code {
     private bool _isLoading = false;
     private bool _isScraping = false;
+    private bool _isTestingJira = false; 
+    private string _jiraDiagnosticStatus = "";
     private int _documentCount = 0;
     private int _ticketCount = 0;
     private int _releaseCount = 0;
@@ -383,6 +426,54 @@
     {
         TelemetryBroker.OnProgressUpdated += HandleSyncProgressNotification;
         await FetchDashboardTelemetryAsync();
+    }
+
+
+private async Task RunJiraLiveDiagnosticTest()
+    {
+        _isTestingJira = true;
+        _jiraDiagnosticStatus = "Initializing robust historical request channel...";
+        StateHasChanged();
+
+        try
+        {
+            // 💡 FIXED: Replaced relative days with an explicit date boundaries filter.
+            // This bypasses the unbounded rule while capturing all legacy and recent project states.
+            var testQuery = "updated >= '2020-01-01' order by updated desc";
+            var result = await JiraService.GetIssuesPageAsync(testQuery, startAt: 0, maxResults: 3);
+
+            if (result != null)
+            {
+                if (result.Issues != null && result.Issues.Count > 0)
+                {
+                    _jiraDiagnosticStatus = $"[200 OK] Handshake success! Connected to project registry. Found {result.Total} global issues updated since 2020. Sample keys pulled: " + 
+                                            string.Join(", ", result.Issues.Select(i => i.Key));
+                    Snackbar?.Add("Jira Cloud Service connection authenticated successfully!", Severity.Success);
+                }
+                else
+                {
+                    // This block captures the 200 OK with 0 records due to Service Account permission masking
+                    _jiraDiagnosticStatus = $"[200 OK] Auth Channel Secure! But Jira returned 0 items. \n\n" +
+                                            $"💡 NEXT STEP: Ensure service account 'csd-ai-training-readonly-jcshl3bfae@serviceaccount.atlassian.com' has been granted 'Read/Browse' project permissions in EIVA's Jira settings.";
+                    Snackbar?.Add("Connected to Jira safely. Awaiting project permission flags.", Severity.Info);
+                }
+            }
+            else
+            {
+                _jiraDiagnosticStatus = "[Error] Ingestion pipeline returned an empty response payload envelope. Check endpoint tracking logs.";
+                Snackbar?.Add("Handshake completed but could not fetch issue keys.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _jiraDiagnosticStatus = $"[Exception Intercepted] Pipeline fault details: {ex.Message}";
+            Snackbar?.Add("Jira authentication channel faulted.", Severity.Error);
+        }
+        finally
+        {
+            _isTestingJira = false;
+            StateHasChanged();
+        }
     }
 
     private bool QuickSearchFilter(InteractionLogItemDto item)

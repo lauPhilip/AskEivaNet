@@ -138,6 +138,14 @@ builder.Services.AddHttpClient<ITicketRepository, TicketRepository>(client =>
 })
 .ConfigurePrimaryHttpMessageHandler(() => GetNetworkHandlerForEnvironment());
 
+// Jira
+// 💡 Bind your secure local user-secrets directly onto your newly consolidated domain configurations object
+builder.Services.Configure<AskEiva.Domain.Services.JiraConfiguration>(
+    builder.Configuration.GetSection("JiraConfiguration"));
+
+// 💡 Register the structural HttpClient pipeline assembly loop matching your Clean Architecture design
+builder.Services.AddHttpClient<AskEiva.Domain.Services.IJiraService, AskEiva.Infrastructure.Services.JiraService>();
+
 // The Software Release Ingestion Scraper Architecture Pipeline
 builder.Services.AddHttpClient<AskEiva.Domain.Services.IReleaseNotesScraper, AskEiva.Infrastructure.Services.ReleaseNotesScraper>(client =>
 {
