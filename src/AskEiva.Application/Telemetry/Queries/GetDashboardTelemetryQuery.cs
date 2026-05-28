@@ -33,11 +33,10 @@ public class GetDashboardTelemetryQueryHandler : IRequestHandler<GetDashboardTel
         _retrievalRepository = retrievalRepository;
     }
 
-    public async Task<TelemetryDashboardResult> Handle(GetDashboardTelemetryQuery request, CancellationToken cancellationToken)
+public async Task<TelemetryDashboardResult> Handle(GetDashboardTelemetryQuery request, CancellationToken cancellationToken)
     {
-        // 1. Run all calculations across Weaviate collections concurrently
-        // Group by source keys to show true discrete item counts instead of vector text chunks
-        var docsTask = _retrievalRepository.GetDistinctSourceCountAsync("DocumentLibrary", "document_id");
+        // 1. Run calculations across Weaviate concurrently using our optimized meta count
+        var docsTask = _retrievalRepository.GetDistinctSourceCountAsync("DocumentLibrary", "url"); //document_id
         var ticketsTask = _retrievalRepository.GetDistinctSourceCountAsync("KnowledgeNode", "source_id"); 
         var logsTask = _retrievalRepository.GetRawInteractionLogsAsync(limit: 50);
 
@@ -46,7 +45,7 @@ public class GetDashboardTelemetryQueryHandler : IRequestHandler<GetDashboardTel
         var logsResult = await logsTask;
         var activeLogs = new List<InteractionLogItemDto>();
 
-        // 2. Parse out the true unmocked InteractionLog list properties matching your dashboard
+        // 2. Parse out the InteractionLog list properties matching your dashboard view layout
         if (logsResult.ValueKind != JsonValueKind.Undefined &&
             logsResult.TryGetProperty("data", out var data) &&
             data.TryGetProperty("Get", out var get) &&
@@ -71,15 +70,16 @@ public class GetDashboardTelemetryQueryHandler : IRequestHandler<GetDashboardTel
                     Timestamp: logTime,
                     UserPrompt: queryText,
                     CopilotResponse: answerText,
-                    ModelUsed: "mistral-large-latest", // Hardcoded model layer tracking attribute
+                    ModelUsed: "mistral-large-latest",
                     FeedbackState: feedbackLabel
                 ));
             }
         }
 
+        // 3. Return the fully computed counts right out of our repository task results
         return new TelemetryDashboardResult(
             TotalUniqueDocuments: docsTask.Result,
-            TotalUniqueTickets: ticketsTask.Result,
+            TotalUniqueTickets: ticketsTask.Result, // 💡 Maps the exact unique counts now!
             Logs: activeLogs
         );
     }

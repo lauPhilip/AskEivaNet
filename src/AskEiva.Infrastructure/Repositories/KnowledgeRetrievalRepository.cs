@@ -222,26 +222,54 @@ public class KnowledgeRetrievalRepository : IKnowledgeRetrievalRepository
         return 0;
     }
 
-    public async Task<int> GetDistinctSourceCountAsync(string className, string groupProperty)
+public async Task<int> GetDistinctSourceCountAsync(string className, string propertyName)
+{
+    // 💡 REMINDER: Enclosing GraphQL parameters dynamically inside explicit format string blocks
+    var gqlQuery = $$"""
     {
-        var jsonQuery = new { query = $"{{ Aggregate {{ {className}(groupBy:[\"{groupProperty}\"]) {{ meta {{ count }} }} }} }}" };
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync("v1/graphql", jsonQuery);
-            if (!response.IsSuccessStatusCode) return 0;
+      Aggregate {
+        {{className}} {
+          {{propertyName}}{
+            count
+          }
+        }
+      }
+    }
+    """;
 
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            if (doc.RootElement.TryGetProperty("data", out var data) &&
-                data.TryGetProperty("Aggregate", out var agg) &&
-                agg.TryGetProperty(className, out var classArr) &&
-                classArr.ValueKind == JsonValueKind.Array)
+    try
+    {
+        var response = await _httpClient.PostAsJsonAsync("v1/graphql", new { query = gqlQuery });
+        if (!response.IsSuccessStatusCode) return 0;
+
+        using var jsonDoc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        
+        // 💡 FIXED: Accurately maps Weaviate's direct Aggregate nested structural envelope layout
+        if (jsonDoc.RootElement.TryGetProperty("data", out var data) &&
+            data.TryGetProperty("Aggregate", out var aggregate) &&
+            aggregate.TryGetProperty(className, out var classBlock) &&
+            classBlock.ValueKind == JsonValueKind.Array && 
+            classBlock.GetArrayLength() > 0)
+        {
+            var targetMetaGroup = classBlock[0];
+            
+            // Step directly inside the property identifier token wrapper (e.g., 'source_id' or 'document_id')
+            if (targetMetaGroup.TryGetProperty(propertyName, out var propertyWrapper) &&
+                propertyWrapper.TryGetProperty("count", out var countValue))
             {
-                return classArr.GetArrayLength();
+                int calculatedTotal = countValue.GetInt32();
+                Console.WriteLine($"[Telemetry Aggregator Check] Resolved true discrete total for {className}.{propertyName} => {calculatedTotal}");
+                return calculatedTotal;
             }
         }
-        catch { }
-        return 0;
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Telemetry Aggregation Error] Failed compiling distinct count for {className}: {ex.Message}");
+    }
+
+    return 0;
+}
 
     public async Task<JsonElement> GetRawInteractionLogsAsync(int limit)
     {

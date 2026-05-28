@@ -1,7 +1,8 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using AskEiva.Domain.Entities;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 using AskEiva.Domain.Services;
 
 namespace AskEiva.Infrastructure.Services;
@@ -9,93 +10,76 @@ namespace AskEiva.Infrastructure.Services;
 public class FreshdeskService : IFreshdeskService
 {
     private readonly HttpClient _httpClient;
-    private const string ConversationEndpoint = "tickets/{0}/conversations";
 
     public FreshdeskService(HttpClient httpClient)
     {
         _httpClient = httpClient;
     }
 
-    public async Task<IEnumerable<TicketNode>> FetchTicketsAsync(int page, int perPage, DateTime? updatedSince = null)
+public async Task<IEnumerable<FreshdeskTicketDto>> GetTicketsPageAsync(int page, int perPage = 30)
     {
-        var url = $"tickets?page={page}&per_page={perPage}&include=description";
+        // 💡 THE ULTIMATE ALIGNMENT: Strip out custom status arrays and filter properties entirely.
+        // Passing just updated_since alongside include=description tells the core endpoint to dump 
+        // the complete historical database ledger matching all lifecycle states.
+        var historicalAnchor = Uri.EscapeDataString("2010-01-01T00:00:00Z");
         
-        if (updatedSince.HasValue)
-        {
-            url += $"&updated_since={updatedSince.Value:yyyy-MM-ddTHH:mm:ssZ}";
-        }
+        var url = $"tickets?page={page}&per_page={perPage}&updated_since={historicalAnchor}&include=description";
 
         try
         {
             var response = await _httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var jsonStream = await response.Content.ReadAsStreamAsync();
-            var rawTickets = await JsonSerializer.DeserializeAsync<List<JsonElement>>(jsonStream);
-
-            var ticketNodes = new List<TicketNode>();
-            if (rawTickets == null) return ticketNodes;
-
-            foreach (var element in rawTickets)
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
             {
-                var id = element.GetProperty("id").GetInt64();
-                var descriptionHtml = element.TryGetProperty("description", out var descProp) ? descProp.GetString() : "";
-                
-                // Fetch the sub-content dialogue thread for full context
-                var dialogueThread = await FetchTicketConversationsAsync(id);
-
-                ticketNodes.Add(new TicketNode
-                {
-                    SourceId = $"ticket_{id}",
-                    Subject = element.TryGetProperty("subject", out var subjProp) ? subjProp.GetString() ?? "No Subject" : "No Subject",
-                    Content = $"Initial Request:\n{descriptionHtml}\n\nDialogue Thread:\n{dialogueThread}",
-                    Status = element.TryGetProperty("status", out var statProp) ? statProp.GetInt32() : 2,
-                    Priority = element.TryGetProperty("priority", out var prioProp) ? prioProp.GetInt32() : 1,
-                    Url = $"{_httpClient.BaseAddress?.ToString().Replace("/api/v2", "")}/a/tickets/{id}"
-                });
+                var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
+                Console.WriteLine($"[Freshdesk Guard] Rate limit hit. Backing off for {retryAfter.TotalSeconds}s...");
+                await Task.Delay(retryAfter);
+                return await GetTicketsPageAsync(page, perPage);
             }
 
-            return ticketNodes;
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[Freshdesk Service] API failure on page {page}. Status: {response.StatusCode}, Details: {errorBody}");
+                return Enumerable.Empty<FreshdeskTicketDto>();
+            }
+
+            var tickets = await response.Content.ReadFromJsonAsync<List<FreshdeskTicketDto>>();
+            return tickets ?? Enumerable.Empty<FreshdeskTicketDto>();
         }
         catch (Exception ex)
         {
-            // Production grade note: In the next step, we'll swap Console with ILogger
-            Console.WriteLine($"[Error] Failed to fetch tickets from Freshdesk: {ex.Message}");
-            return Enumerable.Empty<TicketNode>();
+            Console.WriteLine($"[Freshdesk Service] Exception on page {page}: {ex.Message}");
+            return Enumerable.Empty<FreshdeskTicketDto>();
         }
     }
 
-    public async Task<string> FetchTicketConversationsAsync(long ticketId)
+    // 💡 Helper class to map Freshdesk's search endpoint envelope layout
+    private class FreshdeskSearchRoot
     {
-        var url = string.Format(ConversationEndpoint, ticketId);
+        public List<FreshdeskTicketDto> Results { get; set; } = new();
+    }
+
+
+    public async Task<IEnumerable<FreshdeskConversationDto>> GetTicketConversationsAsync(long ticketId)
+    {
+        var url = $"tickets/{ticketId}/conversations";
         try
         {
             var response = await _httpClient.GetAsync(url);
-            if (!response.IsSuccessStatusCode) return string.Empty;
-
-            var jsonStream = await response.Content.ReadAsStreamAsync();
-            var conversations = await JsonSerializer.DeserializeAsync<List<JsonElement>>(jsonStream);
-            
-            if (conversations == null) return string.Empty;
-
-            var sb = new StringBuilder();
-            foreach (var comment in conversations)
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
             {
-                var body = comment.TryGetProperty("body_text", out var bodyProp) ? bodyProp.GetString() : "";
-                if (!string.IsNullOrWhiteSpace(body))
-                {
-                    var type = comment.TryGetProperty("private", out var privProp) && privProp.GetBoolean() 
-                        ? "Private Note" 
-                        : "Reply";
-                    
-                    sb.AppendLine($"\n**[{type}]**\n{body}");
-                }
+                var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(5);
+                await Task.Delay(retryAfter);
+                return await GetTicketConversationsAsync(ticketId);
             }
-            return sb.ToString();
+
+            if (!response.IsSuccessStatusCode) return Enumerable.Empty<FreshdeskConversationDto>();
+            return await response.Content.ReadFromJsonAsync<List<FreshdeskConversationDto>>() ?? Enumerable.Empty<FreshdeskConversationDto>();
         }
         catch
         {
-            return string.Empty; // Fail gracefully on individual thread crawls
+            return Enumerable.Empty<FreshdeskConversationDto>();
         }
     }
 }

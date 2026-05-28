@@ -19,9 +19,60 @@ namespace AskEiva.Infrastructure.Repositories
             _logger = logger;
         }
 
-        /// <summary>
-        /// Orchestrates the strict collection schema provisioning checks for all core dependencies matching domain specifications.
-        /// </summary>
+    private async Task EnsureKnowledgeNodeClassAsync()
+    {
+        var checkUrl = "v1/schema/KnowledgeNode";
+        var createUrl = "v1/schema";
+
+        try
+        {
+            var response = await _httpClient.GetAsync(checkUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("[Weaviate Provisioner] Class 'KnowledgeNode' verified.");
+                return;
+            }
+
+            // Define the structural layout schema blueprint matching your live console dashboard setup configurations
+            var knowledgeNodeSchema = new
+            {
+                @class = "KnowledgeNode",
+                description = "Unified multi-source semantic vector store cluster mapping historical context inputs for AskEiva.",
+                vectorizer = "text2vec-mistral", // Maps to mistral-embed vector engine
+                moduleConfig = new
+                {
+                    @text2vec_mistral = new { }
+                },
+                vectorIndexConfig = new
+                {
+                    distance = "cosine",
+                    vectorCacheMaxObjects = 500000,
+                    quantizer = new { enabled = true, type = "pq", segments = 0, encoder = new { type = "kmeans" } } // RQ 8-bit variant matching cluster blueprint
+                },
+                properties = new object[]
+                {
+                    new { name = "source_id", dataType = new[] { "text" }, tokenization = "word" },
+                    new { name = "data_type", dataType = new[] { "text" }, tokenization = "word" },
+                    new { name = "subject", dataType = new[] { "text" }, tokenization = "word" },
+                    new { name = "content", dataType = new[] { "text" }, tokenization = "word" },
+                    new { name = "is_distilled", dataType = new[] { "boolean" } },
+                    new { name = "url", dataType = new[] { "text" }, tokenization = "field" },
+                    new { name = "status", dataType = new[] { "int" } },
+                    new { name = "priority", dataType = new[] { "int" } },
+                    new { name = "tags", dataType = new[] { "text[]" } }
+                }
+            };
+
+            Console.WriteLine("[Weaviate Provisioner] Initializing schema structure template instantiation for collection: KnowledgeNode...");
+            var createResponse = await _httpClient.PostAsJsonAsync(createUrl, knowledgeNodeSchema);
+            createResponse.EnsureSuccessStatusCode();
+            Console.WriteLine("[Weaviate Provisioner] Class 'KnowledgeNode' successfully provisioned on remote cluster endpoints.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Weaviate Provisioner Critical Exception]: {ex.Message}");
+        }
+    }
         public async Task EnsureSchemaAsync()
         {
             try
@@ -45,6 +96,8 @@ namespace AskEiva.Infrastructure.Repositories
                 // 2. Provision the Software Release Notes Collection Schema Layer
                 var releaseNotesSchema = CreateSoftwareReleaseSchema();
                 await ProvisionClassIfNeededAsync("SoftwareReleaseNode", releaseNotesSchema);
+
+                await EnsureKnowledgeNodeClassAsync();
             }
             catch (Exception ex)
             {

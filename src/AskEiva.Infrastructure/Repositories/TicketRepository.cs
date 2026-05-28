@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using AskEiva.Domain.Entities;
 using AskEiva.Domain.Repositories;
+using System.Net.Http.Json;
 
 namespace AskEiva.Infrastructure.Repositories;
 
@@ -9,9 +10,16 @@ public class TicketRepository : ITicketRepository
 {
     private readonly HttpClient _httpClient;
 
-    public TicketRepository(HttpClient httpClient)
+    public TicketRepository(HttpClient httpClient, Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
         _httpClient = httpClient;
+
+        // 💡 FIXED: Automatically injects your Weaviate WCD API Key into every inbound transactional pipeline request
+        string weaviateKey = configuration["WEAVIATE_API_KEY"] ?? string.Empty;
+        if (!string.IsNullOrEmpty(weaviateKey) && !_httpClient.DefaultRequestHeaders.Contains("Authorization"))
+        {
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {weaviateKey}");
+        }
     }
 
     public async Task UpsertTicketAsync(TicketNode ticket)
@@ -129,5 +137,109 @@ public class TicketRepository : ITicketRepository
         // utilizes the objects endpoint combined with a deterministic UUID.
         Console.WriteLine($"[Weaviate] Ticket {sourceId} marked as distilled.");
         await Task.CompletedTask; 
+    }
+
+    public async Task<bool> DoesTicketExistAsync(string sourceId)
+    {
+        // Look up the unique source ID directly using Weaviate's GraphQL filtering options
+        var jsonQuery = new
+        {
+            query = $$"""
+            {
+              Get {
+                TicketNode(
+                  limit: 1
+                  where: {
+                    path: ["source_id"],
+                    operator: Equal,
+                    valueText: "{{sourceId}}"
+                  }
+                ) {
+                  source_id
+                }
+              }
+            }
+            """
+        };
+
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("v1/graphql", jsonQuery);
+            if (!response.IsSuccessStatusCode) return false;
+
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            if (doc.RootElement.TryGetProperty("data", out var data) &&
+                data.TryGetProperty("Get", out var get) &&
+                get.TryGetProperty("TicketNode", out var nodes) &&
+                nodes.ValueKind == JsonValueKind.Array)
+            {
+                return nodes.GetArrayLength() > 0;
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    public async Task BatchIngestTicketNodesAsync(IEnumerable<TicketNode> tickets)
+    {
+        var url = "v1/batch/objects";
+        
+        var allBatchObjects = tickets.Select(ticket => new
+        {
+            @class = "KnowledgeNode", // Mapped onto your custom Weaviate Collection layout schema
+            properties = new
+            {
+                source_id = ticket.SourceId,
+                data_type = ticket.DataType,
+                subject = ticket.Subject,
+                content = ticket.Content,
+                is_distilled = ticket.IsDistilled,
+                url = ticket.Url,
+                status = ticket.Status,
+                priority = ticket.Priority,
+                tags = ticket.Tags ?? new List<string>()
+            }
+        }).ToList();
+
+        const int MaxMistralBatchSize = 30;
+
+        for (int i = 0; i < allBatchObjects.Count; i += MaxMistralBatchSize)
+        {
+            var currentChunkPartition = allBatchObjects.Skip(i).Take(MaxMistralBatchSize).ToList();
+            var payload = new { objects = currentChunkPartition };
+
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(url, payload);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"[Ticket Batch Segment Error] Pipeline failed with code: {response.StatusCode}");
+                    continue;
+                }
+
+                using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    int segmentSuccessCount = 0;
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("result", out var res) && res.TryGetProperty("errors", out var err))
+                        {
+                            Console.WriteLine($"[Weaviate Ticket Batch Rejection]: {err.GetRawText()}");
+                        }
+                        else
+                        {
+                            segmentSuccessCount++;
+                        }
+                    }
+                    Console.WriteLine($"[Ticket Repository Ingestion] Vectorized {segmentSuccessCount}/{currentChunkPartition.Count} items to class KnowledgeNode.");
+                }
+                await Task.Delay(1500); // Guard rail against Freshdesk throttling limits
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Ticket Repository Error] Ingestion segment collapsed: {ex.Message}");
+            }
+        }
     }
 }
