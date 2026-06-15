@@ -90,6 +90,10 @@
     private bool _isGraphLoading = false;
     private GraphMetricsDto? _graphMetrics;
 
+    /// <summary>
+    /// Lifecycle trigger interceptor that captures post-render events, firing initial graph query loads on startup.
+    /// </summary>
+    /// <param name="firstRender">True if the component instance has finished initial layout placement inside the client window.</param>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -98,6 +102,11 @@
         }
     }
 
+    /// <summary>
+    /// Dispatches MediatR queries to extract topological knowledge graphs from Weaviate, marshaling data arrays 
+    /// down to external Javascript visualizer scripts via JavaScript Interop.
+    /// </summary>
+    /// <param name="filter">The plain-text predicate or entity search filter entered by the administrator.</param>
     private async Task LoadGraphDataAsync(string filter = "")
     {
         _isGraphLoading = true;
@@ -112,7 +121,8 @@
             
             _graphMetrics = graphData.Metrics;
 
-            // Brief delay to let the viewport DOM register before forcing JS layout injections
+            // Introduce an explicit minimal buffer delay to ensure the DOM has finished compiling viewport elements 
+            // before trying to pass canvas bindings to window object graphs
             await Task.Delay(150);
             await JSRuntime.InvokeVoidAsync("window.eivaGraphInterop.renderNetworkGraph", "eivaGraphViewport", graphData.Nodes, graphData.Edges);
         }
@@ -127,6 +137,9 @@
         }
     }
 
+    /// <summary>
+    /// Intercepts keyboard actions inside the console entry element, catching Enter clicks to dispatch queries.
+    /// </summary>    
     private async Task HandleGraphSearchKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")

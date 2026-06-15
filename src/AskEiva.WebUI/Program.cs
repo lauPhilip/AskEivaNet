@@ -34,7 +34,7 @@ string cleanApiKey = weaviateKey.Trim('\"', ' ');
 string cleanMistralKey = mistralKey.Trim('\"', ' ');
 var freshdeskAuthToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{apiKey}:X"));
 
-// 💡 NEW CROSS-COMPATIBILITY PROXY GATEWAY: Handles campus firewall SSL decryption layers seamlessly
+// CROSS-COMPATIBILITY PROXY GATEWAY: Handles campus firewall SSL decryption layers seamlessly
 var targetSystemProxy = System.Net.Http.HttpClient.DefaultProxy;
 bool isWorkNetworkActive = (targetSystemProxy != null && targetSystemProxy.GetProxy(new Uri("https://uznwxkhmqa6krcdebigw.c0.europe-west3.gcp.weaviate.cloud/")) != null) 
                           || AppDomain.CurrentDomain.BaseDirectory.Contains("au667198", StringComparison.OrdinalIgnoreCase);
@@ -169,7 +169,7 @@ builder.Services.AddHttpClient<AskEiva.Domain.Services.IReleaseNotesScraper, Ask
 })
 .ConfigurePrimaryHttpMessageHandler(() => GetNetworkHandlerForEnvironment());
 
-// --- 💡 FIXED: DOCUMENTATION MANUALS REPOSITORY CLIENT WITH SEED EMBEDDING KEYS ---
+// --- DOCUMENTATION MANUALS REPOSITORY CLIENT WITH SEED EMBEDDING KEYS ---
 builder.Services.AddHttpClient<IDocumentationRepository, DocumentationRepository>(client =>
 {
     client.BaseAddress = new Uri(weaviateUrl);
@@ -177,7 +177,7 @@ builder.Services.AddHttpClient<IDocumentationRepository, DocumentationRepository
     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanApiKey}");
     client.DefaultRequestHeaders.Add("X-Weaviate-Api-Key", cleanApiKey);
     
-    // 💡 THE CRITICAL INGESTION FIX: Forwards your Mistral token for document library chunk embedding generation!
+    // Forwards your Mistral token for document library chunk embedding generation!
     client.DefaultRequestHeaders.Add("X-Mistral-Api-Key", cleanMistralKey);
 })
 .ConfigurePrimaryHttpMessageHandler(() => GetNetworkHandlerForEnvironment());
@@ -257,7 +257,7 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 app.MapCustomLogoutEndpoint();
 
-// --- 6. 💡 FIXED ASYNCHRONOUS STARTUP PROVISIONING ENFORCEMENT HOOK ---
+// --- 6. FIXED ASYNCHRONOUS STARTUP PROVISIONING ENFORCEMENT HOOK ---
 using (var scope = app.Services.CreateScope())
 {
     try

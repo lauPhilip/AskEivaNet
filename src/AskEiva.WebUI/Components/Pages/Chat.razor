@@ -216,23 +216,32 @@
         }
     };
 
+    /// <summary>
+    /// Evaluates if at least one operational search vector switch is toggled.
+    /// </summary>
     private bool IsAnySourceChecked() => _includeTickets || _includeReleaseNotes || _includeDocumentation;
 
-    // Checks tab disable states safely
+    /// <summary>
+    /// Validates if an individual message object contains semantic match data within the specified category.
+    /// </summary>
     private bool HasSourceType(UIConversationMessage message, string targetType)
     {
         if (message?.SemanticMatches == null) return false;
         return message.SemanticMatches.Any(m => string.Equals(m.SourceType, targetType, StringComparison.OrdinalIgnoreCase));
     }
 
-    // 💡 THE ULTIMATE FIX: Filters the items safely inside pure C# space to bypass the Razor property quote generator bug
+    /// <summary>
+    /// Filters incoming match arrays inside pure C# space to bypass the Razor compiler literal string property quote bug.
+    /// </summary>
     private IEnumerable<RetrievalMatch> GetMatchesBySource(UIConversationMessage message, string targetType)
     {
         if (message?.SemanticMatches == null) return Enumerable.Empty<RetrievalMatch>();
-        
         return message.SemanticMatches.Where(m => string.Equals(m.SourceType, targetType, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Handles user terminal prompting workflows, triggering multi-source semantic fetches and streaming responses token-by-token.
+    /// </summary>
     private async Task SubmitPrompt()
     {
         if (string.IsNullOrWhiteSpace(_currentPrompt) || _isProcessing || !IsAnySourceChecked()) return;
@@ -242,9 +251,11 @@
         _isProcessing = true;
         _streamingChunkBuffer = string.Empty;
 
+        // Push human message turn onto user interface thread stack
         _messageStream.Add(new UIConversationMessage { Text = userText, IsUser = true });
         await ScrollToBottom();
 
+        // Instantiate empty shell message frame to receive upcoming SSE tokens
         var responseMessage = new UIConversationMessage { Text = "", IsUser = false };
         _messageStream.Add(responseMessage);
 
@@ -253,7 +264,7 @@
             // 1. Fetch a wider list of underlying contexts from Weaviate to ensure all categories are represented
             var completeSemanticMatches = await RetrievalRepository.SearchSemanticChunksAsync(userText, limit: 12);
             
-            //  Targets your true Weaviate collection schemas: KnowledgeNode, SoftwareReleaseNode, and DocumentLibrary
+            //  Map records cleanly onto checked system domains: KnowledgeNode, SoftwareReleaseNode, and DocumentLibrary
             var filteredMatches = completeSemanticMatches.Where(m => 
                 (m.SourceType.Equals("KnowledgeNode", StringComparison.OrdinalIgnoreCase) && _includeTickets) ||
                 (m.SourceType.Equals("SoftwareReleaseNode", StringComparison.OrdinalIgnoreCase) && _includeReleaseNotes) ||
@@ -266,6 +277,7 @@
             var activeGraphChains = await RetrievalRepository.SearchGraphTriplesAsync(userText, limit: 5);
             responseMessage.GraphChains = activeGraphChains.ToList();
 
+            // 3. Initiate the interactive chat server-sent stream via Mistral AI clients
             await foreach (var chunk in ChatService.GenerateStreamingChatResponseAsync(userText, responseMessage.SemanticMatches, responseMessage.GraphChains, _sessionHistory))
             {
                 _streamingChunkBuffer += chunk;
@@ -273,10 +285,11 @@
                 StateHasChanged();
                 await ScrollToBottom();
             }
-
+            // Append conversational indices to session states to retain long-term memory metrics
             _sessionHistory.Add(new ChatTurn(userText, IsUser: true));
             _sessionHistory.Add(new ChatTurn(_streamingChunkBuffer, IsUser: false));
 
+            // Fire-and-forget logging task pushed to background pools to avoid locking UI rendering cycles
             _ = Task.Run(async () => 
             {
                 try
@@ -301,6 +314,9 @@
         }
     }
 
+    /// <summary>
+    /// Resets the conversational history state blocks and purges active message stream lines.
+    /// </summary>
     private void ClearConversationSession()
     {
         _sessionHistory.Clear();
@@ -313,6 +329,9 @@
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Catches enter keystrokes from the operator console keyboard to send prompt inputs instantly.
+    /// </summary>
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && !e.ShiftKey)
@@ -321,12 +340,18 @@
         }
     }
 
+    /// <summary>
+    /// Invokes unmanaged browser window runtime engines to force scroll boundaries to the bottom row of text views.
+    /// </summary>
     private async Task ScrollToBottom()
     {
         await Task.Delay(10);
         await JSRuntime.InvokeVoidAsync("eval", "document.querySelector('.custom-chat-pane')?.scrollTo(0, 100000)");
     }
 
+    /// <summary>
+    /// Parses raw LLM text using regex expressions to safely construct clean inline HTML elements, lists, and tables.
+    /// </summary>
     private string FormatMessageBody(string rawText)
     {
         if (string.IsNullOrWhiteSpace(rawText)) return "...";
@@ -335,10 +360,13 @@
         sb.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
         var text = sb.ToString();
 
+        // Format bold text elements
         text = System.Text.RegularExpressions.Regex.Replace(text, @"\*\*(.*?)\*\*", "<strong>$1</strong>");
-    
+
+        // Format inline code block backticks
         text = System.Text.RegularExpressions.Regex.Replace(text, @"`(.*?)`", "<code style='background: #F1F5F9; padding: 2px 4px; border-radius: 4px; font-family: monospace; color: #DC2626;'>$1</code>");
 
+        // Advanced Markdown table rendering loop block
         var tableRegex = new System.Text.RegularExpressions.Regex(@"((?:\|[^|\r\n]*)+\|(?:\r?\n?)+)+");
         text = tableRegex.Replace(text, match =>
         {
@@ -369,11 +397,15 @@
             return htmlTable.ToString();
         });
 
+        // Format list items and text breaks
         text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s+(.*?)$", "<li>$1</li>", System.Text.RegularExpressions.RegexOptions.Multiline);
         text = text.Replace("\n", "<br />");
         return text;
     }
 
+    /// <summary>
+    /// Models internal UI text message nodes accompanied by localized vector score mappings and GraphRAG metadata tracking.
+    /// </summary>
     public class UIConversationMessage
     {
         public string Text { get; set; } = string.Empty;

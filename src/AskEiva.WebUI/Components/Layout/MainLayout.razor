@@ -19,7 +19,7 @@
             </Authorized>
             <NotAuthorized>
                 <MudLink Href="Account/Register" Color="Color.Primary" Class="mx-3 font-weight-bold" Style="align-self: center;">Register</MudLink>
-                <MudButton Href="Account/Login"  Style="Background-color:#C5DC22;" Variant="Variant.Filled" Size="Size.Small" Class="mx-2 px-4">Login</MudButton>
+                <MudButton Href="Account/Login" Style="Background-color:#C5DC22;" Variant="Variant.Filled" Size="Size.Small" Class="mx-2 px-4">Login</MudButton>
             </NotAuthorized>
         </AuthorizeView>
     </MudAppBar>
@@ -45,6 +45,9 @@
 </MudLayout>
 
 @code {
+    /// <summary>
+    /// Configures the customized global style guidelines and palette tokens matching EIVA corporate branding standards.
+    /// </summary>
     private readonly MudTheme _eivaTheme = new()
     {
         PaletteLight = new PaletteLight()
@@ -61,7 +64,7 @@
         },
         LayoutProperties = new LayoutProperties()
         {
-            DefaultBorderRadius = "4px"   // Sharp engineering-style edges instead of overly round buttons
+            DefaultBorderRadius = "4px"   // Sharp engineering-style edges instead of rounded profiles
         }
     };
 }

@@ -6,7 +6,7 @@
 @inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
-    @* --- COMMAND CENTER HEADER --- *@
+
     <div class="d-flex align-center gap-3 mb-6">
         <MudIcon Icon="@Icons.Material.Filled.Terminal" Color="Color.Primary" Size="Size.Large" />
         <div>
@@ -15,7 +15,6 @@
         </div>
     </div>
 
-    @* --- LIVE VECTOR DATABASE METRICS STRIP --- *@
     <MudGrid Class="mb-6">
         <MudItem xs="12" sm="6" md="3">
             <MudPaper Elevation="0" Class="pa-4 bg-white border-sm" Style="border: 1px solid #E2E8F0; border-radius: 12px;">
@@ -62,7 +61,6 @@
         </MudItem>
     </MudGrid>
 
-    @* --- WORKSPACE APPLICATION GATEWAYS --- *@
     <MudText Typo="Typo.h6" Class="font-weight-bold mb-3" Style="color: #0A2540;">Platform Shortcuts</MudText>
     <MudGrid Class="mb-6">
         <MudItem xs="12" md="6" lg="3">
@@ -106,7 +104,6 @@
         </MudItem>
     </MudGrid>
 
-    @* --- CORE INFRASTRUCTURE STATUS REGISTRY --- *@
     <MudPaper Elevation="0" Class="pa-4 bg-white border-sm" Style="border: 1px solid #E2E8F0; border-radius: 12px;">
         <div class="d-flex align-center justify-space-between flex-wrap gap-4">
             <div class="d-flex align-center gap-2">
@@ -155,14 +152,20 @@
     private int _releaseNodeCount = 0;
     private int _graphTripletsCount = 0;
 
+    /// <summary>
+    /// Lifecycle trigger initializing the dashboard view, making decoupled asynchronous 
+    /// query calls straight to your repository layers to aggregate actual database metrics.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            // 💡 DYNAMIC LOADING: Reuses your generic count repository methods to pull fresh database sizes
+            // Query total class counts across multi-source collections cleanly
             _knowledgeNodeCount = await KnowledgeRepo.GetTotalClassCountAsync("KnowledgeNode");
             _docLibraryCount = await KnowledgeRepo.GetDistinctSourceCountAsync("DocumentationLibrary", "document_id");
             _releaseNodeCount = await KnowledgeRepo.GetTotalClassCountAsync("SoftwareReleaseNode");
+            
+            // Extract a data matrix query slice to populate active knowledge graph linkages metrics
             var graphMesh = await KnowledgeRepo.SearchGraphTriplesAsync("NaviScan", limit: 499);
             _graphTripletsCount = graphMesh?.Count() ?? 0;
         }

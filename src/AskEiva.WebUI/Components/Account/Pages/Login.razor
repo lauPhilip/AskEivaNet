@@ -30,39 +30,39 @@
 
             <div class="d-flex flex-column gap-4">
                 <MudTextField @bind-Value="Input!.Email" 
-                            Label="Corporate Email" 
-                            Variant="Variant.Outlined" 
-                            Required="true" 
-                            InputType="InputType.Email"
-                            Immediate="true"
-                            UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Email" } })"
-                            Placeholder="name@eiva.com"
-                            For="@(() => Input!.Email)" />
+                             Label="Corporate Email" 
+                             Variant="Variant.Outlined" 
+                             Required="true" 
+                             InputType="InputType.Email"
+                             Immediate="true"
+                             UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Email" } })"
+                             Placeholder="name@eiva.com"
+                             For="@(() => Input!.Email)" />
 
                 <MudTextField @bind-Value="Input!.Password" 
-                            Label="Password" 
-                            Variant="Variant.Outlined" 
-                            Required="true" 
-                            InputType="InputType.Password"
-                            Immediate="true"
-                            UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Password" } })"
-                            Placeholder="Password"
-                            For="@(() => Input!.Password)" />
+                             Label="Password" 
+                             Variant="Variant.Outlined" 
+                             Required="true" 
+                             InputType="InputType.Password"
+                             Immediate="true"
+                             UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Password" } })"
+                             Placeholder="Password"
+                             For="@(() => Input!.Password)" />
 
                 <div class="d-flex align-center justify-space-between my-2">
                     <MudCheckBox @bind-Value="Input!.RememberMe" 
-                                Label="Remember this workstation" 
-                                Color="Color.Primary" 
-                                Class="ml-n2" />
+                                 Label="Remember this workstation" 
+                                 Color="Color.Primary" 
+                                 Class="ml-n2" />
                     <MudLink Href="Account/ForgotPassword" Style="color: #0A2540; font-size: 0.875rem;">Forgot password?</MudLink>
                 </div>
 
                 <MudButton ButtonType="ButtonType.Submit" 
-                        Variant="Variant.Filled" 
-                        Color="Color.Primary" 
-                        FullWidth="true" 
-                        Class="py-3 mt-2" 
-                        Style="Background-color:#C5DC22;font-weight: bold;">
+                           Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           FullWidth="true" 
+                           Class="py-3 mt-2" 
+                           Style="Background-color:#C5DC22;font-weight: bold;">
                     LOG IN
                 </MudButton>
             </div>
@@ -81,40 +81,57 @@
 @code {
     private string? errorMessage;
 
+    /// <summary>
+    /// Captures the contextual HTTP envelope pipeline parameters passed down by the server engine.
+    /// </summary>
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the bound input state values populated directly out of the interactive form DOM.
+    /// </summary>
     [SupplyParameterFromForm]
     private InputModel? Input { get; set; }
 
+    /// <summary>
+    /// Gets or sets the relative landing path routing parameter extracted out of window queries.
+    /// </summary>
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
+    /// <summary>
+    /// Executes baseline instance state initialization logic.
+    /// </summary>
     protected override void OnInitialized()
     {
         Input ??= new();
     }
 
-    // 💡 REMOVED: The duplicate 'private HttpContext? HttpContext { get; set; }' definition was deleted from here!
-
+    /// <summary>
+    /// Handles asynchronous pipeline state verification, clearing active cookie caches on GET sequences.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        // Enforce clean sign-out states if arriving via an initial GET request to purge residual auth cookies
         if (HttpContext?.Request != null && HttpMethods.IsGet(HttpContext.Request.Method))
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
 
+        // Parse and safely capture outbound redirection parameter keys out of query fragments
         if (NavigationManager != null)
         {
             var currentUri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
             if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(currentUri.Query).TryGetValue("ReturnUrl", out var returnUrl))
             {
-                // 💡 FIXED: Mapped directly to your parameter property 'ReturnUrl' (removed the underscore)
                 ReturnUrl = returnUrl;
             }
         }
     }
 
+    /// <summary>
+    /// Validates security credentials against identity storage and processes authorization state tracking redirections.
+    /// </summary>
     public async Task LoginUser()
     {
         if (Input == null)
@@ -124,6 +141,7 @@
             return;
         }
 
+        // Execute password verification against the backend vector store user configuration
         var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
         if (result.Succeeded)
         {
@@ -136,6 +154,9 @@
         }
     }
 
+    /// <summary>
+    /// Local internal encapsulation structure tracking UI form schema data and input model validation rules.
+    /// </summary>
     private sealed class InputModel
     {
         [Required(ErrorMessage = "Operational Email is required.")]

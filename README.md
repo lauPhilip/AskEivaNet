@@ -218,5 +218,11 @@ The solution structural design isolates domain laws from external storage framew
     ├── 📄 app.css
     └── 📄 favicon.png
 ```
-
-* TODO: Explain WebUI files
+* ```chat.razor```: implements an interactive, server-side Blazor user interface that provides operators with a real-time, streaming GraphRAG chat interface, allowing them to query and filter context dynamically across indexed support tickets, software release logs, and causal knowledge graph paths.
+* ```configurationportal.razor```: acts as an administrative hub, providing real-time data grid telemetry from Weaviate while allowing administrators to execute and track background ingestion workers for public manuals, release notes, and automated knowledge graph edge-linking pipelines.
+* ```EvaluationDashboard.razor```: implements a card-style data validation arena that displays reinforcement learning metrics and enables corporate support engineers to review, adjust, and score automated Mistral fixing recommendations against ground-truth closed tickets to write safe RLHF data matrix outputs.
+* ```graphrag.razor```: a interactive knowledge graph exploration canvas that displays graph structural density metrics and uses JavaScript Interop pipelines to render multi-hop relationship networks extracted from Weaviate vector spaces.
+* ```home.razor```: a dashboard, rendering aggregate system resource counts directly from Weaviate vector collections alongside persistent micro-service connectivity state status indicators and shortcuts to launch workspace features.
+* ```App.razor```: provides the foundational root HTML application host shell for the project.
+* ```MeshBuildStateStore.razor```: an in-memory cross-component state synchronization container that tracks background graph-mesh construction progress metrics and exposes multicast event delegates to trigger dynamic UI layout refreshes as individual tickets finish processing.
+* TODO: Explain the remaining WebUI files

@@ -141,7 +141,7 @@
                         </MudCard>
                     </ChildRowContent>
                     <PagerContent>
-                        <MudDataGridPager T="InteractionLogItemDto" PageSizeOptions="new int[]{5, 10, 20}" />
+                        <MudDataGridPager T="InteractionLogItemDto" PageSizeOptions="[5, 10, 20]" />
                     </PagerContent>
                 </MudDataGrid>
             </MudPaper>
@@ -398,11 +398,10 @@
         <div class="d-flex flex-column gap-3">
             <div class="d-flex align-center gap-4">
                 
-                @* 💡 FIXED MESH BUILDER STATE CONTROLLER: Automatically goes grey and blocks execution once chains exist inside Weaviate *@
                 <MudButton Variant="Variant.Filled"  
                            Disabled="@(StateStore.IsProcessing || _graphChainCount > 0)"
-                           OnClick="TriggerGlobalContextMeshGeneration"
-                           StartIcon="@(_graphChainCount > 0 ? Icons.Material.Filled.Hub : Icons.Material.Filled.Hub)"
+                           OnClick="TriggerVisualMeshDistillationCore"
+                           StartIcon="@Icons.Material.Filled.Hub"
                            Style="@(_graphChainCount > 0 ? "background-color: #E2E8F0; color: #64748B; font-weight: bold;" : "background-color: #C5DC22; color: #0A2540; font-weight: bold;")">
                     @if (StateStore.IsProcessing)
                     {
@@ -469,19 +468,22 @@
     private int _ticketCount = 0;
     private int _releaseCount = 0;
     private int _releaseChunksCount = 0; 
-    private int _graphChainCount = 0; // 💡 NEW: Discovered cross-reference graph link chain index counter variable
+    private int _graphChainCount = 0; 
     private string _searchString = "";
-    private List<InteractionLogItemDto> _interactionLogs = new();
+    private List<InteractionLogItemDto> _interactionLogs = [];
 
     private bool _isSyncing = false;
     private int _activePage = 1;
     private string _lastProcessedId = "FD-None";
     private int _totalChunksCommitted = 0;
-    private List<string> _liveLogStream = new();
-    private List<SyncProgressUpdate> _processedTicketsHistory = new();
+    private readonly List<string> _liveLogStream = [];
+    private readonly List<SyncProgressUpdate> _processedTicketsHistory = [];
     private string _graphMeshStatusMessage = string.Empty;
-    private HashSet<string> _expandedRows = new();
+    private readonly HashSet<string> _expandedRows = [];
 
+    /// <summary>
+    /// Attaches system event listeners and dispatches asynchronous commands to pull Weaviate cluster telemetry.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         TelemetryBroker.OnProgressUpdated += HandleSyncProgressNotification;
@@ -489,11 +491,17 @@
         StateStore.OnStateChanged += ProgressStateStoreChanged;
     }
 
+    /// <summary>
+    /// Event notification callback handler that triggers a component layout refresh loop when the state store broadcasts updates.
+    /// </summary>
     private void ProgressStateStoreChanged()
     {
         InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>
+    /// Dispatches a command message through MediatR to trigger the background crawler scraper against Freshdesk public manuals.
+    /// </summary>
     private async Task TriggerDocumentationIngestionPipeline()
     {
         if (_documentCount > 0 || _isCrawlingDocs) return;
@@ -504,7 +512,7 @@
         try
         {
             Snackbar?.Add("Connecting to public HTML solutions portal scrape...", Severity.Info);
-            var command = new IngestDocumentationCommand(new List<string> { "GLOBAL_RUN" });
+            var command = new IngestDocumentationCommand([ "GLOBAL_RUN" ]);
             var result = await Mediator.Send(command);
 
             if (result.Success && result.ArticlesProcessed > 0)
@@ -529,7 +537,10 @@
         }
     }
 
-    private async Task TriggerGlobalContextMeshGeneration()
+    /// <summary>
+    /// Spawns an asynchronous task to orchestrate the multi-collection lookahead compilation and forge causal GraphRAG edges.
+    /// </summary>
+    private async Task TriggerVisualMeshDistillationCore()
     {
         if (_graphChainCount > 0 || StateStore.IsProcessing) return;
 
@@ -537,16 +548,17 @@
         StateStore.UpdateProgress(0, 0, "Initialization", "Spawning background context mesh processing core...");
         StateHasChanged();
 
+        // Push thread executor to background thread pool to safeguard user interface performance frames
         _ = Task.Run(async () =>
         {
             try
             {
-                var progressReporter = new Progress<AskEiva.Application.Graphs.Commands.GraphProgressReport>(report =>
+                var progressReporter = new Progress<GraphProgressReport>(report =>
                 {
                     StateStore.UpdateProgress(report.CurrentCount, report.TotalCount, report.CurrentTicketId, report.Message);
                 });
 
-                var command = new AskEiva.Application.Graphs.Commands.BuildGlobalContextGraphCommand(
+                var command = new BuildGlobalContextGraphCommand(
                     BatchSize: 8920, 
                     ProgressTracker: progressReporter
                 );
@@ -567,7 +579,8 @@
             finally
             {
                 StateStore.IsProcessing = false;
-                // Fetch updated query summaries right at completion step to apply the locks seamlessly
+                
+                // Refresh dashboard telemetry metrics upon final transaction completion to lock out the execution parameters safely
                 await FetchDashboardTelemetryAsync();
                 await InvokeAsync(StateHasChanged);
             }
@@ -576,6 +589,9 @@
         await Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Evaluation callback method targeting interaction audit row searches.
+    /// </summary>
     private bool QuickSearchFilter(InteractionLogItemDto item)
     {
         if (string.IsNullOrWhiteSpace(_searchString)) return true;
@@ -586,6 +602,9 @@
         return false;
     }
 
+    /// <summary>
+    /// Thread interceptor that catches operational crawler log broadcasts, updating progress tables and log views.
+    /// </summary>
     private void HandleSyncProgressNotification(SyncProgressUpdate update)
     {
         InvokeAsync(() =>
@@ -593,7 +612,7 @@
             if (!string.IsNullOrWhiteSpace(update.LogMessage))
             {
                 _liveLogStream.Add(update.LogMessage);
-                if (_liveLogStream.Count > 100) _liveLogStream.RemoveAt(0);
+                if (_liveLogStream.Count > 100) _liveLogStream.RemoveAt(0); // Cap in-memory console shell buffer size
             }
 
             if (update.CurrentPage > 0) _activePage = update.CurrentPage;
@@ -610,7 +629,7 @@
                 }
                 else
                 {
-                    _processedTicketsHistory.Insert(0, update);
+                    _processedTicketsHistory.Insert(0, update); // Display latest tracked task at the top row of the grid
                 }
             }
 
@@ -619,6 +638,9 @@
         });
     }
 
+    /// <summary>
+    /// Dispatches a query object message via MediatR to query and refresh the running total class counts from Weaviate.
+    /// </summary>
     private async Task FetchDashboardTelemetryAsync()
     {
         _isLoading = true;
@@ -645,6 +667,9 @@
         }
     }
 
+    /// <summary>
+    /// Dispatches a processing command message to invoke the historical support ticket sweep pipeline over Freshdesk REST endpoints.
+    /// </summary>
     private async Task TriggerTicketIngestionPipeline()
     {
         if (_ticketCount > 0 || _isSyncing) return;
@@ -671,6 +696,9 @@
         }
     }
 
+    /// <summary>
+    /// Dispatches an ingestion command message via MediatR to trigger the UglyToad.PdfPig extraction loop across manifest release charts.
+    /// </summary>
     private async Task TriggerReleaseNotesScrapeAsync()
     {
         if (_releaseChunksCount > 0 || _isScraping) return;
@@ -709,6 +737,9 @@
         }
     }
 
+    /// <summary>
+    /// Detaches active pipeline notification events to safeguard against system memory leak anomalies during page disposal.
+    /// </summary>
     public void Dispose()
     {
         TelemetryBroker.OnProgressUpdated -= HandleSyncProgressNotification;

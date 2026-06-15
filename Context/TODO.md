@@ -17,6 +17,7 @@ This document tracks upcoming feature implementations, system enhancements, and 
 - [ ] **Error Logging Decoupling:** Introduce a structured logging decorator using Serilog in the Infrastructure layer to capture pipeline faults cleanly.
 - [ ] **Weaviate Retry Policies:** Implement resilient transient fault handling using `Polly` inside Weaviate repositories for multi-threaded batch operations.
 - [ ] **Sliding Window Tuning:** Fine-tune character overlaps (`chunkSize` and `chunkOverlap` settings) specifically for short system fault logs and parameter registers.
+- [ ] **Continous updates of incomming tickets and other data:** use the folder (`AskEiva.Worker`) to create pipeline jobs that pulls fresh data from the datasources, so the data is always new.
 
 ---
 

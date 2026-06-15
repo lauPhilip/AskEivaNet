@@ -11,7 +11,7 @@
 @using Microsoft.Extensions.Logging
 @using AskEiva.Domain.Entities
 @using AskEiva.WebUI.Components.Account
-@using MudBlazor @* 💡 Injects MudBlazor component definitions cleanly *@
+@using MudBlazor 
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -27,62 +27,62 @@
     <MudCard Elevation="0" Style="border: 1px solid #E2E8F0; border-radius: 4px;" Class="pa-8">
         
         <div class="text-center mb-6">
-                    <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #0A2540;">AskEIVA</MudText>
-                    <MudText Typo="Typo.subtitle1" Style="color: #5B7083;">Authenticator</MudText>
-                </div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #0A2540;">AskEIVA</MudText>
+            <MudText Typo="Typo.subtitle1" Style="color: #5B7083;">Authenticator</MudText>
+        </div>
 
-                <StatusMessage Message="@Message" />
+        <StatusMessage Message="@Message" />
 
         <EditForm Model="Input!" 
-          asp-route-returnUrl="@ReturnUrl" 
-          method="post" 
-          OnValidSubmit="RegisterUser" 
-          OnInvalidSubmit="LogFormErrors" 
-          FormName="register">
-                    <DataAnnotationsValidator />
+                  asp-route-returnUrl="@ReturnUrl" 
+                  method="post" 
+                  OnValidSubmit="RegisterUser" 
+                  OnInvalidSubmit="LogFormErrors" 
+                  FormName="register">
+            <DataAnnotationsValidator />
 
-                    <div class="mb-4 text-left custom-validation-summary" style="color: #DC2626; font-size: 0.87rem;">
-                        <ValidationSummary />
-                    </div>
+            <div class="mb-4 text-left custom-validation-summary" style="color: #DC2626; font-size: 0.87rem;">
+                <ValidationSummary />
+            </div>
 
-                    <div class="d-flex flex-column gap-4">
-                        <MudTextField @bind-Value="Input!.Email" 
-                                    Label="Corporate Email" 
-                                    Variant="Variant.Outlined" 
-                                    Required="true" 
-                                    InputType="InputType.Email"
-                                    UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Email" } })"
-                                    Placeholder="name@eiva.com"
-                                    For="@(() => Input!.Email)" />
+            <div class="d-flex flex-column gap-4">
+                <MudTextField @bind-Value="Input!.Email" 
+                             Label="Corporate Email" 
+                             Variant="Variant.Outlined" 
+                             Required="true" 
+                             InputType="InputType.Email"
+                             UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Email" } })"
+                             Placeholder="name@eiva.com"
+                             For="@(() => Input!.Email)" />
 
-                        <MudTextField @bind-Value="Input!.Password" 
-                                    Label="Password" 
-                                    Variant="Variant.Outlined" 
-                                    Required="true" 
-                                    InputType="InputType.Password"
-                                    UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Password" } })"
-                                    Placeholder="Password"
-                                    For="@(() => Input!.Password)" />
+                <MudTextField @bind-Value="Input!.Password" 
+                             Label="Password" 
+                             Variant="Variant.Outlined" 
+                             Required="true" 
+                             InputType="InputType.Password"
+                             UserAttributes="@(new Dictionary<string, object> { { "name", "Input.Password" } })"
+                             Placeholder="Password"
+                             For="@(() => Input!.Password)" />
 
-                        <MudTextField @bind-Value="Input!.ConfirmPassword" 
-                                    Label="Confirm Password" 
-                                    Variant="Variant.Outlined" 
-                                    Required="true" 
-                                    InputType="InputType.Password"
-                                    UserAttributes="@(new Dictionary<string, object> { { "name", "Input.ConfirmPassword" } })"
-                                    Placeholder="Password"
-                                    For="@(() => Input!.ConfirmPassword)" />
+                <MudTextField @bind-Value="Input!.ConfirmPassword" 
+                             Label="Confirm Password" 
+                             Variant="Variant.Outlined" 
+                             Required="true" 
+                             InputType="InputType.Password"
+                             UserAttributes="@(new Dictionary<string, object> { { "name", "Input.ConfirmPassword" } })"
+                             Placeholder="Password"
+                             For="@(() => Input!.ConfirmPassword)" />
 
-                        <MudButton ButtonType="ButtonType.Submit" 
-                                Variant="Variant.Filled" 
-                                Color="Color.Secondary" 
-                                FullWidth="true" 
-                                Class="py-3 mt-4" 
-                                Style="Background-color:#C5DC22;font-weight: bold;">
-                            Register Account
-                        </MudButton>
-                    </div>
-                </EditForm>
+                <MudButton ButtonType="ButtonType.Submit" 
+                           Variant="Variant.Filled" 
+                           Color="Color.Secondary" 
+                           FullWidth="true" 
+                           Class="py-3 mt-4" 
+                           Style="Background-color:#C5DC22;font-weight: bold;">
+                    Register Account
+                </MudButton>
+            </div>
+        </EditForm>
 
         <div class="mt-8 pt-4 text-center" style="border-top: 1px solid #F1F5F9;">
             <MudText Typo="Typo.body2" Style="color: #5B7083;">
@@ -97,19 +97,35 @@
 @code {
     private IEnumerable<IdentityError>? identityErrors;
 
+    /// <summary>
+    /// Gets or sets the data model object bound to UI state properties.
+    /// </summary>
     [SupplyParameterFromForm]
     private InputModel? Input { get; set; }
 
+    /// <summary>
+    /// Gets or sets the target landing destination path parameters after registration completes.
+    /// </summary>
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
+    /// <summary>
+    /// Computes a singular string mapping any active identity pipeline validation crashes.
+    /// </summary>
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
+    /// <summary>
+    /// Instantiates localized form backing fields.
+    /// </summary>
     protected override void OnInitialized()
     {
         Input ??= new();
     }
 
+    /// <summary>
+    /// Processes incoming form objects, calling the user manager pipeline to create and persist identity configurations inside Weaviate.
+    /// </summary>
+    /// <param name="editContext">The metadata state mapping context tracking fields inside the current form wrapper.</param>
     public async Task RegisterUser(EditContext editContext)
     {
         if (Input == null) return;
@@ -120,6 +136,7 @@
             Email = Input.Email 
         };
         
+        // Persist user and verify password rules against Weaviate infrastructure
         var result = await UserManager.CreateAsync(user, Input.Password);
 
         if (!result.Succeeded)
@@ -130,10 +147,28 @@
 
         Logger.LogInformation("User created a new account with password in Weaviate.");
 
+        // Establish an authenticated cookies tracking session token inside the browser client
         await SignInManager.SignInAsync(user, isPersistent: false);
         RedirectManager.RedirectTo(ReturnUrl);
     }
 
+    /// <summary>
+    /// Captures, logs, and dumps form validation failures to security diagnostic streams before dispatch requests drop.
+    /// </summary>
+    /// <param name="editContext">The data model state context holding active validation message objects.</param>
+    public void LogFormErrors(EditContext editContext)
+    {
+        Logger.LogCritical("🚨 FORM SUBMISSION BLOCKED: Validation Failed Before Reaching RegisterUser!");
+        
+        foreach (var message in editContext.GetValidationMessages())
+        {
+            Logger.LogWarning("Validation Error: {ValidationMessage}", message);
+        }
+    }
+
+    /// <summary>
+    /// Local model containing field parameter mappings, formatting attributes, and input error text constraints.
+    /// </summary>
     private sealed class InputModel
     {
         [Required(ErrorMessage = "Email is required.")]
@@ -151,15 +186,5 @@
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
-    }
-
-    public void LogFormErrors(EditContext editContext)
-    {
-        Logger.LogCritical("🚨 FORM SUBMISSION BLOCKED: Validation Failed Before Reaching RegisterUser!");
-        
-        foreach (var message in editContext.GetValidationMessages())
-        {
-            Logger.LogWarning($"Validation Error: {message}");
-        }
     }
 }

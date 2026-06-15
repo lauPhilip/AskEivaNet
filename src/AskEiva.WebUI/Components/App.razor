@@ -24,17 +24,24 @@
     
     <script>
         window.eivaGraphInterop = {
+            /**
+             * Binds raw data models passed from .NET collections onto an unmanaged HTML viewport element canvas,
+             * converting object graphs into physical force-directed vis.js topologies.
+             * param {string} containerId - The unique target DOM element container identifier.
+             * param {Array} nodesArray - Strongly-typed node entities matching entity class configurations.
+             * param {Array} edgesArray - Relational connection rows containing predicates and edge directions.
+             */
             renderNetworkGraph: function (containerId, nodesArray, edgesArray) {
                 const container = document.getElementById(containerId);
                 if (!container) return;
 
-                // Format raw .NET objects into vis.js expected schemas
+                // Format raw .NET object parameters into structured vis.js dataset schemas
                 const data = {
                     nodes: new vis.DataSet(nodesArray),
                     edges: new vis.DataSet(edgesArray)
                 };
 
-                // Enterprise Styling Configuration
+               // Enterprise Styling & Physics Stabilization Configurations (Matches EIVA Branding Standards)
                 const options = {
                     nodes: {
                         shape: 'dot',
@@ -61,7 +68,7 @@
                     }
                 };
 
-                // Initialize canvas network viewport instance
+                // Instantiate and draw the interactive canvas network viewport instance
                 new vis.Network(container, data, options);
             }
         };
