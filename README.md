@@ -226,3 +226,22 @@ The solution structural design isolates domain laws from external storage framew
 * ```App.razor```: provides the foundational root HTML application host shell for the project.
 * ```MeshBuildStateStore.razor```: an in-memory cross-component state synchronization container that tracks background graph-mesh construction progress metrics and exposes multicast event delegates to trigger dynamic UI layout refreshes as individual tickets finish processing.
 * TODO: Explain the remaining WebUI files
+
+
+### 🔑 Environment Secrets Configuration
+
+The .NET 10 core architecture relies on the following configuration profile keys to authorize secure outbound streams to Weaviate, Freshdesk, and Mistral AI. Ensure these are set in your local system environment variables or your user secrets manager before executing worker runs:
+
+```powershell
+# Navigate to the startup project
+cd AskEiva.WebUI
+
+# Initialize user secrets if not already done
+dotnet user-secrets init
+
+# Map infrastructure keys and endpoint parameters
+dotnet user-secrets set "FRESHDESK_DOMAIN" "eiva"
+dotnet user-secrets set "FRESHDESK_API_KEY" "your_actual_freshdesk_key"
+dotnet user-secrets set "WEAVIATE_URL" "[https://your-cluster.weaviate.network](https://your-cluster.weaviate.network)"
+dotnet user-secrets set "WEAVIATE_API_KEY" "your_actual_weaviate_key"
+dotnet user-secrets set "MISTRAL_API_KEY" "your_actual_mistral_key"

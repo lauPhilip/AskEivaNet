@@ -69,13 +69,6 @@ builder.Services.AddHttpClient<IMistralChatService, MistralChatService>(client =
     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanMistralKey}");
 });
 
-builder.Services.AddHttpClient<IExtractionEngine, MistralExtractionEngine>(client =>
-{
-    client.BaseAddress = new Uri("https://api.mistral.ai/");
-    client.DefaultRequestHeaders.Clear();
-    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {cleanMistralKey}");
-});
-
 // --- 5. CORE SYSTEM ENGINE ORCHESTRATION ---
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AskEiva.Application.Tickets.Commands.IngestTicketsCommand).Assembly));
 builder.Services.AddHostedService<Worker>();
