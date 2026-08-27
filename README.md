@@ -44,3 +44,12 @@ src/
 ├── AskEiva.Application/     # Commands, queries, and business logic
 ├── AskEiva.Infrastructure/  # Weaviate client, web scrapers, and external APIs
 └── AskEiva.WebUI/           # Blazor Server UI for search, chat, and ingestion
+
+---
+
+## Setup
+dotnet user-secrets set "FRESHDESK_DOMAIN" "eiva"
+dotnet user-secrets set "FRESHDESK_API_KEY" "your_key"
+dotnet user-secrets set "WEAVIATE_URL" "[https://your-cluster.weaviate.network](https://your-cluster.weaviate.network)"
+dotnet user-secrets set "WEAVIATE_API_KEY" "your_key"
+dotnet user-secrets set "MISTRAL_API_KEY" "your_key"
